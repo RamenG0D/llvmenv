@@ -163,14 +163,23 @@ fn main() -> error::Result<()> {
             if discard {
                 entry.clean_cache_dir().unwrap();
             }
-            entry.checkout().unwrap();
+            dbg!(entry.src_dir().unwrap());
+            if !entry.src_dir().unwrap().exists() {
+                entry.checkout().unwrap();
+            }            
             if update {
                 entry.update().unwrap();
             }
             if clean {
                 entry.clean_build_dir().unwrap();
             }
-            entry.build(nproc).unwrap();
+
+            match entry.build(nproc) {
+                Ok(_) => log::info!("Built Succesfully!"),
+                Err(err) => {
+                    panic!("Error: {}\nAttempting to try `llvm` dir, fixes error if the build is a llvm-project", err);
+                }
+            }
         }
 
         LLVMEnv::Current { verbose } => {

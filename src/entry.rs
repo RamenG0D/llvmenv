@@ -536,10 +536,16 @@ impl Entry {
     }
 
     pub fn build_dir(&self) -> Result<PathBuf> {
-        let dir = self.src_dir()?.join("build");
-        if !dir.exists() {
-            info!("Create build dir: {}", dir.display());
-            fs::create_dir_all(&dir).with(&dir)?;
+        let mut dir = self.src_dir()?;
+        if dir.join("llvm").exists() {
+            info!("Found llvm dir");
+            dir = dir.join("llvm"); 
+        }
+        let bd = self.src_dir()?.join("build");
+        info!("Create build dir: {}", bd.display());
+        if !bd.exists() {
+            info!("Create build dir: {}", bd.display());
+            fs::create_dir_all(&bd).with(&bd)?;
         }
         Ok(dir)
     }
@@ -577,7 +583,7 @@ impl Entry {
     fn configure(&self) -> Result<()> {
         let setting = self.setting();
         let mut opts = setting.generator.option();
-        opts.push(format!("{}", self.src_dir()?.display()));
+        opts.push(format!("{}/llvm/", self.src_dir()?.display()));
 
         opts.push(format!(
             "-DCMAKE_INSTALL_PREFIX={}",
@@ -607,6 +613,8 @@ impl Entry {
         for (k, v) in &setting.option {
             opts.push(format!("-D{}={}", k, v));
         }
+
+        dbg!(&opts);
 
         process::Command::new("cmake")
             .args(&opts)

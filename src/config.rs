@@ -8,7 +8,7 @@ use crate::error::*;
 pub const APP_NAME: &str = "llvmenv";
 pub const ENTRY_TOML: &str = "entry.toml";
 
-const LLVM_MIRROR: &str = include_str!("llvm-mirror.toml");
+const LLVM_MIRROR: &str = include_str!("llvm.toml");
 
 pub fn config_dir() -> Result<PathBuf> {
     let path = dirs::config_dir()
