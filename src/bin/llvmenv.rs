@@ -1,11 +1,10 @@
 use llvmenv::error::CommandExt;
 use llvmenv::*;
 
+use log::info;
 use simplelog::*;
 use std::{
-    env,
-    path::PathBuf,
-    process::{exit, Command},
+    env, path::PathBuf, process::{exit, Command}
 };
 use structopt::StructOpt;
 
@@ -154,32 +153,32 @@ fn main() -> error::Result<()> {
         } => {
             let mut entry = entry::load_entry(&name)?;
             let nproc = nproc.unwrap_or_else(num_cpus::get);
-            if let Some(builder) = builder {
-                entry.set_builder(&builder)?;
-            }
-            if let Some(build_type) = build_type {
-                entry.set_build_type(build_type)?;
-            }
-            if discard {
-                entry.clean_cache_dir().unwrap();
-            }
-            dbg!(entry.src_dir().unwrap());
-            if !entry.src_dir().unwrap().exists() {
+            if let Some(builder) = builder { entry.set_builder(&builder)?; }
+            if let Some(build_type) = build_type { entry.set_build_type(build_type)?; }
+            if discard { entry.clean_cache_dir().unwrap(); }
+
+            let bdir = match entry {
+                llvmenv::entry::Entry::Remote { ref name, .. } => dirs::cache_dir().unwrap().join(format!("llvmenv/{}", name)),
+                llvmenv::entry::Entry::Local { ref path, .. } => path.into(),
+            };
+            let bdir = bdir.as_path();
+            if bdir.exists() && clean {
+                entry.clean_build_dir().unwrap();
                 entry.checkout().unwrap();
-            }            
+            } else if !bdir.exists() {
+                entry.checkout().unwrap();
+            } else if bdir.exists() {
+                info!("source directory already exists, so skiping checkout");
+            } else {
+                info!("no option is specified, so we will checkout by default");
+                entry.checkout().unwrap();
+            }
+            
             if update {
                 entry.update().unwrap();
             }
-            if clean {
-                entry.clean_build_dir().unwrap();
-            }
 
-            match entry.build(nproc) {
-                Ok(_) => log::info!("Built Succesfully!"),
-                Err(err) => {
-                    panic!("Error: {}\nAttempting to try `llvm` dir, fixes error if the build is a llvm-project", err);
-                }
-            }
+            entry.build(nproc).unwrap();
         }
 
         LLVMEnv::Current { verbose } => {

@@ -215,11 +215,10 @@ impl Tool {
         match self.relative_path {
             Some(ref rel_path) => rel_path.to_string(),
             None => match self.name.as_str() {
-                "clang" | "lld" | "lldb" | "polly" => format!("tools/{}", self.name),
+                "libclc" | "clang" | "lld" | "lldb" | "polly" => format!("tools/{}", self.name),
                 "clang-tools-extra" => "tools/clang/tools/clang-tools-extra".into(),
-                "compiler-rt" | "libcxx" | "libcxxabi" | "libunwind" | "openmp" => {
-                    format!("projects/{}", self.name)
-                }
+                "mlir" | "compiler-rt" | "openmp" | "libcxx" | "libcxxabi" | "libunwind" | "third-party" | "cmake" => format!("../{}", self.name),
+                /*=> format!("projects/{}", self.name)*/
                 _ => panic!(
                     "Unknown tool. Please specify its relative path explicitly: {}",
                     self.name
@@ -414,6 +413,30 @@ impl Entry {
                 version
             ),
         ));
+
+        // newly added defaults
+        setting.tools.push(Tool::new(
+            "mlir",
+            &format!("{}/mlir-{}.src.tar.xz", base_url, version),
+        ));
+        setting.tools.push(Tool::new(
+            "third-party",
+            &format!("{}/third-party-{}.src.tar.xz", base_url, version),
+        ));
+        setting.tools.push(Tool::new(
+            "cmake",
+            &format!("{}/cmake-{}.src.tar.xz", base_url, version),
+        ));
+        
+        // old defaults
+        setting.tools.push(Tool::new(
+            "polly",
+            &format!("{}/polly-{}.src.tar.xz", base_url, version),
+        ));
+        setting.tools.push(Tool::new(
+            "compiler-rt",
+            &format!("{}/compiler-rt-{}.src.tar.xz", base_url, version),
+        ));
         setting.tools.push(Tool::new(
             "lld",
             &format!("{}/lld-{}.src.tar.xz", base_url, version),
@@ -427,17 +450,9 @@ impl Entry {
             &format!("{}/clang-tools-extra-{}.src.tar.xz", base_url, version),
         ));
         setting.tools.push(Tool::new(
-            "polly",
-            &format!("{}/polly-{}.src.tar.xz", base_url, version),
-        ));
-        setting.tools.push(Tool::new(
-            "compiler-rt",
-            &format!("{}/compiler-rt-{}.src.tar.xz", base_url, version),
-        ));
-        setting.tools.push(Tool::new(
             "libcxx",
             &format!("{}/libcxx-{}.src.tar.xz", base_url, version),
-        ));
+        ));        
         setting.tools.push(Tool::new(
             "libcxxabi",
             &format!("{}/libcxxabi-{}.src.tar.xz", base_url, version),
@@ -450,7 +465,9 @@ impl Entry {
             "openmp",
             &format!("{}/openmp-{}.src.tar.xz", base_url, version),
         ));
+        
         let name = version.to_string();
+        
         Entry::parse_setting(&name, Some(version), setting).unwrap()
     }
 
@@ -572,16 +589,10 @@ impl Entry {
     }
 
     pub fn build_dir(&self) -> Result<PathBuf> {
-        let mut dir = self.src_dir()?;
-        if dir.join("llvm").exists() {
-            info!("Found llvm dir");
-            dir = dir.join("llvm"); 
-        }
-        let bd = self.src_dir()?.join("build");
-        info!("Create build dir: {}", bd.display());
-        if !bd.exists() {
-            info!("Create build dir: {}", bd.display());
-            fs::create_dir_all(&bd).with(&bd)?;
+        let dir = self.src_dir()?.join("build");
+        if !dir.exists() {
+            info!("Create build dir: {}", dir.display());
+            fs::create_dir_all(&dir).with(&dir)?;
         }
         Ok(dir)
     }
@@ -619,12 +630,13 @@ impl Entry {
     fn configure(&self) -> Result<()> {
         let setting = self.setting();
         let mut opts = setting.generator.option();
-        opts.push(format!("{}/llvm/", self.src_dir()?.display()));
+        opts.push(format!("{}", self.src_dir()?.display()));
 
         opts.push(format!(
             "-DCMAKE_INSTALL_PREFIX={}",
             data_dir()?.join(self.prefix()?).display()
         ));
+
         opts.push(format!("-DCMAKE_BUILD_TYPE={:?}", setting.build_type));
 
         // Enable ccache if exists
@@ -650,12 +662,11 @@ impl Entry {
             opts.push(format!("-D{}={}", k, v));
         }
 
-        dbg!(&opts);
-
         process::Command::new("cmake")
             .args(&opts)
             .current_dir(self.build_dir()?)
             .check_run()?;
+
         Ok(())
     }
 }
