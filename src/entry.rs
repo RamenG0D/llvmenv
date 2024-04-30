@@ -288,31 +288,42 @@ fn load_entry_toml(toml_str: &str) -> Result<Vec<Entry>> {
         .collect()
 }
 
+// Fixed to get the tags automatically from the official github repository
 pub fn official_releases() -> Vec<Entry> {
-    vec![
-        Entry::official(13, 0, 0),
-        Entry::official(12, 0, 1),
-        Entry::official(12, 0, 0),
-        Entry::official(11, 1, 0),
-        Entry::official(11, 0, 0),
-        Entry::official(10, 0, 1),
-        Entry::official(10, 0, 0),
-        Entry::official(9, 0, 1),
-        Entry::official(8, 0, 1),
-        Entry::official(9, 0, 0),
-        Entry::official(8, 0, 0),
-        Entry::official(7, 1, 0),
-        Entry::official(7, 0, 1),
-        Entry::official(7, 0, 0),
-        Entry::official(6, 0, 1),
-        Entry::official(6, 0, 0),
-        Entry::official(5, 0, 2),
-        Entry::official(5, 0, 1),
-        Entry::official(4, 0, 1),
-        Entry::official(4, 0, 0),
-        Entry::official(3, 9, 1),
-        Entry::official(3, 9, 0),
-    ]
+    // Get tags (versions) from github repository Fix
+    let mut command = process::Command::new("git");
+    let out = command.args(&[
+        "ls-remote", 
+        "--tags", 
+        "https://github.com/llvm/llvm-project.git"
+    ]).stdout(
+        process::Stdio::piped()
+    ).spawn().unwrap().stdout.unwrap();
+
+    // Need to find a platform dependent way to grep this output
+    // but it just returns the version numbers separated by dots
+    let out = process::Command::new("grep")
+        .stdin(out)
+        .stdout(process::Stdio::piped())
+        .args(&["-o", "-e", r#"\d+.\d+.\d+"#])
+        .spawn().unwrap().stdout.unwrap();
+    
+    // Sort the versions (removes duplicates and sorts them in descending order)
+    // also should be platform independent :(
+    let out = process::Command::new("sort")
+        .stdin(out)
+        .arg("-unr")
+        .output()
+        .unwrap();
+    
+    // finally convert the output to a string
+    let tags = String::from_utf8(out.stdout).unwrap();
+    
+    // Parse the tags into a vector of entries
+    tags.lines().map(|tag| {
+        let version = Version::parse(tag.trim_start_matches("refs/tags/")).unwrap();
+        Entry::official(version.major, version.minor, version.patch)
+    }).collect()
 }
 
 pub fn load_entries() -> Result<Vec<Entry>> {

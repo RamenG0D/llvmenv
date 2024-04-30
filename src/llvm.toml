@@ -1,12 +1,3 @@
+
 [llvm-mirror]
 url    = "https://github.com/llvm/llvm-project"
-#target = ["X86"]
-
-#[[llvm-mirror.tools]]
-#name = "clang"
-#url = "https://github.com/llvm-mirror/clang"
-
-#[[llvm-mirror.tools]]
-#name = "clang-extra"
-#url = "https://github.com/llvm-mirror/clang-tools-extra"
-#relative_path = "tools/clang/tools/extra"
