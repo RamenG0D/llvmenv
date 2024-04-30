@@ -298,7 +298,7 @@ pub fn official_releases() -> Vec<Entry> {
             "https://github.com/llvm/llvm-project.git",
         ])
         .output()
-        .unwrap()
+        .expect("Please Install `GIT` for your system")
         .stdout;
 
     let output = String::from_utf8_lossy(&out);
