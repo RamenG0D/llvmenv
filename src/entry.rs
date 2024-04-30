@@ -70,6 +70,7 @@ use log::{info, warn};
 use semver::{Version, VersionReq};
 use serde_derive::Deserialize;
 use std::{collections::HashMap, fs, path::PathBuf, process, str::FromStr};
+use regex::Regex;
 
 use crate::{config::*, error::*, resource::*};
 
@@ -156,7 +157,7 @@ impl CMakeGenerator {
 /// CMake build type
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum BuildType {
-    Debug,
+    Debug, 
     Release,
     RelWithDebInfo,
     MinSizeRel,
@@ -290,47 +291,62 @@ fn load_entry_toml(toml_str: &str) -> Result<Vec<Entry>> {
 
 // Fixed to get the tags automatically from the official github repository
 pub fn official_releases() -> Vec<Entry> {
-    // Get tags (versions) from github repository Fix
     let mut command = process::Command::new("git");
-    let out = command.args(&[
-        "ls-remote", 
-        "--tags", 
-        "https://github.com/llvm/llvm-project.git"
-    ]).stdout(
-        process::Stdio::piped()
-    ).spawn().unwrap().stdout.unwrap();
-
-    // Need to find a platform dependent way to grep this output
-    // but it just returns the version numbers separated by dots
-    let out = process::Command::new("grep")
-        .stdin(out)
-        .stdout(process::Stdio::piped())
-        .args(&["-o", "-P", r#"(\d+)\.(\d+)\.(\d+)"#])
-        .spawn().unwrap().stdout.unwrap();
-    
-    // Sort the versions (removes duplicates and sorts them in descending order)
-    // also should be platform independent :(
-    let out = process::Command::new("sort")
-        .stdin(out)
-        .stdout(process::Stdio::piped())
-        .arg("-u")
-        .spawn().unwrap().stdout.unwrap();
-
-    // DAMN! Why does sort break the output?? specificaly when you use unique, numeric, and reverse????
-    // its fixable if you just separate it into 2 commands
-    let out = process::Command::new("sort")
-        .stdin(out)
-        .arg("-nr")
-        .spawn().unwrap()
-        .wait_with_output().unwrap()
+    let out = command
+        .args(&[
+            "ls-remote",
+            "--tags",
+            "https://github.com/llvm/llvm-project.git",
+        ])
+        .output()
+        .unwrap()
         .stdout;
 
+    let output = String::from_utf8_lossy(&out);
+    let re = Regex::new(r"(\d+)\.(\d+)\.(\d+)").unwrap();
+    let tags: Vec<String> = re.captures_iter(&output).map(|cap| cap[0].to_string()).fold(Vec::new(), |mut x, y| {
+        // we want to filter out the tags that are not in the form of x.y.z
+        // by greatest to smallest version numbers if x1 == x2, and y1 == y2, then z1 == z2, then we discard the tag its a duplicate
+        let version = Version::parse(&y).unwrap();
+        let mut found = false;
+        for tag in x.iter() {
+            let tag_version = Version::parse(tag).unwrap();
+            if version.major == tag_version.major && version.minor == tag_version.minor && version.patch == tag_version.patch {
+                found = true;
+                break;
+            }
+        }
+        if !found {
+            // now we check if x1 > x2, if so we insert x1 before x2
+            let mut index = 0;
+            for (i, tag) in x.iter().enumerate() {
+                let tag_version = Version::parse(tag).unwrap();
+                if version.major > tag_version.major {
+                    index = i;
+                    break;
+                } else if version.major == tag_version.major {
+                    if version.minor > tag_version.minor {
+                        index = i;
+                        break;
+                    } else if version.minor == tag_version.minor {
+                        if version.patch > tag_version.patch {
+                            index = i;
+                            break;
+                        }
+                    }
+                }
+            }
+            x.insert(index, y);
+        }
+        x
+    });
+
     // finally convert the output to a string
-    let tags = String::from_utf8(out).unwrap();
-    
+    let tags = tags.join("\n");
+
     // Parse the tags into a vector of entries
     tags.lines().map(|tag| {
-        let version = Version::parse(tag.trim_start_matches("refs/tags/")).unwrap();
+        let version = Version::parse(tag).unwrap();
         Entry::official(version.major, version.minor, version.patch)
     }).collect()
 }
