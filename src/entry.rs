@@ -305,19 +305,28 @@ pub fn official_releases() -> Vec<Entry> {
     let out = process::Command::new("grep")
         .stdin(out)
         .stdout(process::Stdio::piped())
-        .args(&["-o", "-e", r#"\d+.\d+.\d+"#])
+        .args(&["-o", "-P", r#"(\d+)\.(\d+)\.(\d+)"#])
         .spawn().unwrap().stdout.unwrap();
     
     // Sort the versions (removes duplicates and sorts them in descending order)
     // also should be platform independent :(
     let out = process::Command::new("sort")
         .stdin(out)
-        .arg("-unr")
-        .output()
-        .unwrap();
-    
+        .stdout(process::Stdio::piped())
+        .arg("-u")
+        .spawn().unwrap().stdout.unwrap();
+
+    // DAMN! Why does sort break the output?? specificaly when you use unique, numeric, and reverse????
+    // its fixable if you just separate it into 2 commands
+    let out = process::Command::new("sort")
+        .stdin(out)
+        .arg("-nr")
+        .spawn().unwrap()
+        .wait_with_output().unwrap()
+        .stdout;
+
     // finally convert the output to a string
-    let tags = String::from_utf8(out.stdout).unwrap();
+    let tags = String::from_utf8(out).unwrap();
     
     // Parse the tags into a vector of entries
     tags.lines().map(|tag| {
