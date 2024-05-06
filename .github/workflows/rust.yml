@@ -15,19 +15,19 @@ jobs:
       build_type: [Release]
 
       steps:
-      - uses: threeal/cmake-action@main
-        with:
-          run-build: false
-          generator: Ninja
-          c-compiler: clang
-          cxx-compiler: clang++
-      - uses: actions/checkout@v4
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-      # Build commands    
-      - run: cargo run -- init
-      - run: cargo run -- build-entry -G vs 10.0.0
+        - uses: threeal/cmake-action@main
+          with:
+            run-build: false
+            generator: Ninja
+            c-compiler: clang
+            cxx-compiler: clang++
+        - uses: actions/checkout@v4
+        - uses: actions-rs/cargo@v1
+          with:
+            command: test
+        # Build commands    
+        - run: cargo run -- init
+        - run: cargo run -- build-entry -G vs 10.0.0
 
   # windows:
   #   runs-on: windows-2019
