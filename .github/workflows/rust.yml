@@ -20,6 +20,9 @@ jobs:
           command: test
       - name: Setup Python
         uses: actions/setup-python@v5.1.0
+        with:
+            cache: 'pip'
+      - run: pip install dist-utils
       # Build commands
       - name: Build
         # timeout-minutes: 80000
