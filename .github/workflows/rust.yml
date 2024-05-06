@@ -22,7 +22,7 @@ jobs:
         uses: actions/setup-python@v5.1.0
         with:
             cache: 'pip'
-      - run: curl http://peak.telecommunity.com/dist/ez_setup.py | python
+      - run: pip install setuptools
       # Build commands
       - name: Build
         # timeout-minutes: 80000
