@@ -450,14 +450,14 @@ impl Entry {
         // due to current msvc limitations, etc, :(
         // #[cfg(not(target_os = "windows"))]
         // {
-            setting.tools.push(Tool::new(
-                "libcxx",
-                &format!("{}/libcxx-{}.src.tar.xz", base_url, version),
-            ));
-            setting.tools.push(Tool::new(
-                "libcxxabi",
-                &format!("{}/libcxxabi-{}.src.tar.xz", base_url, version),
-            ));
+        setting.tools.push(Tool::new(
+            "libcxx",
+            &format!("{}/libcxx-{}.src.tar.xz", base_url, version),
+        ));
+        setting.tools.push(Tool::new(
+            "libcxxabi",
+            &format!("{}/libcxxabi-{}.src.tar.xz", base_url, version),
+        ));
         // }
         // #[cfg(not(target_os = "macos"))]
         setting.tools.push(Tool::new(
