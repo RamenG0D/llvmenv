@@ -15,7 +15,8 @@ jobs:
       build_type: [Release]
 
       steps:
-        - uses: threeal/cmake-action@main
+        - name: CMake
+          uses: threeal/cmake-action@main
           with:
             run-build: false
             generator: Ninja
