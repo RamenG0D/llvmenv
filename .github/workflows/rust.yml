@@ -7,13 +7,12 @@ jobs:
     runs-on: ${{ matrix.os }}
 #    fail-fast: false
     
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-      
+    matrix:
+      os: [ubuntu-latest, windows-latest, macos-latest]
+      strategy:
+        # steps
         steps:
-        - name: CMake
-          uses: threeal/cmake-action@main
+        - uses: threeal/cmake-action@main
           with:
             run-build: false
             generator: Ninja
