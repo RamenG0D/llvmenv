@@ -450,6 +450,7 @@ impl Entry {
         // unfortunately, libcxx and libcxxabi are not available for windows
         // due to current msvc limitations :(
         #[cfg(not(windows))]
+        #[cfg(not(macos))]
         {
             setting.tools.push(Tool::new(
                 "libcxx",
