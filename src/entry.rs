@@ -479,7 +479,7 @@ impl Entry {
             "libunwind",
             &format!("{}/libunwind-{}.src.tar.xz", base_url, version),
         ));
-        
+
         setting.tools.push(Tool::new(
             "openmp",
             &format!("{}/openmp-{}.src.tar.xz", base_url, version),
