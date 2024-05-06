@@ -1,4 +1,4 @@
-use llvmenv::error::CommandExt;
+use llvmenv::{config::cache_dir, error::CommandExt};
 use llvmenv::*;
 
 use log::info;
@@ -21,6 +21,14 @@ enum LLVMEnv {
     #[structopt(name = "builds", about = "List usable build")]
     Builds {},
 
+    #[structopt(name = "clean", about = "Cleans all whole build cache or specific build version cache")]
+    Clean {
+        #[structopt(short = "a", long = "all", help = "clean all build cache")]
+        all: bool,
+        #[structopt(short = "n", long = "name", help = "clean specific build cache")]
+        name: Option<String>,
+    },
+
     #[structopt(name = "entries", about = "List entries to be built")]
     Entries {},
     #[structopt(name = "build-entry", about = "Build LLVM/Clang")]
@@ -28,8 +36,9 @@ enum LLVMEnv {
         name: String,
         #[structopt(short = "u", long = "update")]
         update: bool,
-        #[structopt(short = "c", long = "clean", help = "clean build directory")]
-        clean: bool,
+        // not needed anymore (just using the discard flag and auto cleaning the build dir if it exists)
+        // #[structopt(short = "c", long = "clean", help = "clean build directory")]
+        // clean: bool,
         #[structopt(
             short = "G",
             long = "builder",
@@ -120,6 +129,23 @@ fn main() -> error::Result<()> {
     match opt {
         LLVMEnv::Init {} => config::init_config()?,
 
+        LLVMEnv::Clean { all, name } => {
+            if all {
+                let builds = entry::load_entries()?;
+                for build in builds {
+                    let vp = cache_dir()?.join(build.name());
+                    if vp.exists() {
+                        std::fs::remove_dir_all(vp)?;
+                    }
+                }
+            } else if let Some(name) = name {
+                let build = entry::load_entry(&name)?;
+                build.clean_cache_dir()?;
+            } else {
+                log::error!("Either --all or --name is required");
+            }
+        }
+
         LLVMEnv::Builds {} => {
             let builds = build::builds()?;
             let max = builds.iter().map(|b| b.name().len()).max().unwrap();
@@ -145,7 +171,6 @@ fn main() -> error::Result<()> {
         LLVMEnv::BuildEntry {
             name,
             update,
-            clean,
             discard,
             builder,
             nproc,
@@ -155,30 +180,31 @@ fn main() -> error::Result<()> {
             let nproc = nproc.unwrap_or_else(num_cpus::get);
             if let Some(builder) = builder { entry.set_builder(&builder)?; }
             if let Some(build_type) = build_type { entry.set_build_type(build_type)?; }
-            if discard { entry.clean_cache_dir().unwrap(); }
-
+            
             let bdir = match entry {
                 llvmenv::entry::Entry::Remote { ref name, .. } => dirs::cache_dir().unwrap().join(format!("llvmenv/{}", name)),
                 llvmenv::entry::Entry::Local { ref path, .. } => path.into(),
             };
+            if discard {
+                // dir may or may not exist yet we dont want to error if it does not
+                let _ = entry.clean_cache_dir();
+            }
             let bdir = bdir.as_path();
-            if bdir.exists() && clean {
-                entry.clean_build_dir().unwrap();
-                entry.checkout().unwrap();
-            } else if !bdir.exists() {
-                entry.checkout().unwrap();
-            } else if bdir.exists() {
+            
+            if bdir.exists() {
                 info!("source directory already exists, so skiping checkout");
             } else {
-                info!("no option is specified, so we will checkout by default");
                 entry.checkout().unwrap();
             }
-            
             if update {
                 entry.update().unwrap();
             }
 
             entry.build(nproc).unwrap();
+            
+            if discard {
+                entry.clean_cache_dir().unwrap();
+            }
         }
 
         LLVMEnv::Current { verbose } => {

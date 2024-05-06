@@ -67,7 +67,7 @@
 
 use itertools::*;
 use log::{info, warn};
-use semver::{Version, VersionReq};
+use semver::Version;
 use serde_derive::Deserialize;
 use std::{collections::HashMap, fs, path::PathBuf, process, str::FromStr};
 use regex::Regex;
@@ -215,10 +215,11 @@ impl Tool {
         match self.relative_path {
             Some(ref rel_path) => rel_path.to_string(),
             None => match self.name.as_str() {
-                "libclc" | "clang" | "lld" | "lldb" | "polly" => format!("tools/{}", self.name),
+                "cmake" | "clang" | "lld" | "lldb" | "polly" => format!("tools/{}", self.name),
                 "clang-tools-extra" => "tools/clang/tools/clang-tools-extra".into(),
-                "mlir" | "compiler-rt" | "openmp" | "libcxx" | "libcxxabi" | "libunwind" | "third-party" | "cmake" => format!("../{}", self.name),
-                /*=> format!("projects/{}", self.name)*/
+                "compiler-rt" | "libcxx" | "libcxxabi" | "libunwind" | "openmp" => {
+                    format!("projects/{}", self.name)
+                }
                 _ => panic!(
                     "Unknown tool. Please specify its relative path explicitly: {}",
                     self.name
@@ -364,14 +365,6 @@ pub fn load_entry(name: &str) -> Result<Entry> {
         if entry.name() == name {
             return Ok(entry);
         }
-
-        if let Some(version) = entry.version() {
-            if let Ok(req) = VersionReq::parse(name) {
-                if req.matches(version) {
-                    return Ok(entry);
-                }
-            }
-        }
     }
     Err(Error::InvalidEntry {
         message: "Entry not found".into(),
@@ -414,19 +407,21 @@ impl Entry {
             ),
         ));
 
-        // newly added defaults
-        setting.tools.push(Tool::new(
-            "mlir",
-            &format!("{}/mlir-{}.src.tar.xz", base_url, version),
-        ));
-        setting.tools.push(Tool::new(
-            "third-party",
-            &format!("{}/third-party-{}.src.tar.xz", base_url, version),
-        ));
-        setting.tools.push(Tool::new(
-            "cmake",
-            &format!("{}/cmake-{}.src.tar.xz", base_url, version),
-        ));
+        // these tools are only available from versions 16.0.0 and above
+        if version >= Version::new(16, 0, 0) {
+            setting.tools.push(Tool::new(
+                "mlir",
+                &format!("{}/mlir-{}.src.tar.xz", base_url, version),
+            ));
+            setting.tools.push(Tool::new(
+                "third-party",
+                &format!("{}/third-party-{}.src.tar.xz", base_url, version),
+            ));
+            setting.tools.push(Tool::new(
+                "cmake",
+                &format!("{}/cmake-{}.src.tar.xz", base_url, version),
+            ));
+        }
         
         // old defaults
         setting.tools.push(Tool::new(
@@ -449,14 +444,19 @@ impl Entry {
             "clang-tools-extra",
             &format!("{}/clang-tools-extra-{}.src.tar.xz", base_url, version),
         ));
-        setting.tools.push(Tool::new(
-            "libcxx",
-            &format!("{}/libcxx-{}.src.tar.xz", base_url, version),
-        ));        
-        setting.tools.push(Tool::new(
-            "libcxxabi",
-            &format!("{}/libcxxabi-{}.src.tar.xz", base_url, version),
-        ));
+        // unfortunately, libcxx and libcxxabi are not available for windows
+        // due to current msvc limitations :(
+        #[cfg(not(windows))]
+        {
+            setting.tools.push(Tool::new(
+                "libcxx",
+                &format!("{}/libcxx-{}.src.tar.xz", base_url, version),
+            ));        
+            setting.tools.push(Tool::new(
+                "libcxxabi",
+                &format!("{}/libcxxabi-{}.src.tar.xz", base_url, version),
+            ));
+        }
         setting.tools.push(Tool::new(
             "libunwind",
             &format!("{}/libunwind-{}.src.tar.xz", base_url, version),
@@ -583,7 +583,16 @@ impl Entry {
 
     pub fn src_dir(&self) -> Result<PathBuf> {
         Ok(match self {
-            Entry::Remote { name, .. } => cache_dir()?.join(name),
+            Entry::Remote { name, .. } => {
+                #[cfg(windows)]
+                {
+                    cache_dir()?.join(name)
+                }
+                #[cfg(not(windows))]
+                {
+                    cache_dir()?.join(name).join("llvm")
+                }
+            },
             Entry::Local { path, .. } => path.into(),
         })
     }
