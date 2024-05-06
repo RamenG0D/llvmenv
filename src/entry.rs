@@ -434,7 +434,7 @@ impl Entry {
             &format!("{}/polly-{}.src.tar.xz", base_url, version),
         ));
         
-        #[cfg(not(macos))]
+        #[cfg(not(target_os = "macos"))]
         setting.tools.push(Tool::new(
             "compiler-rt",
             &format!("{}/compiler-rt-{}.src.tar.xz", base_url, version),
@@ -449,22 +449,20 @@ impl Entry {
             &format!("{}/lldb-{}.src.tar.xz", base_url, version),
         ));
 
-        // unfortunately, libcxx and libcxxabi are not available for windows
-        // due to current msvc limitations :(
-        #[cfg(not(windows))]
+        // unfortunately, libcxx and libcxxabi are not available for windows or macos
+        // due to current msvc limitations, etc, :(
+        #[cfg(target_os = "linux")]
         {
-            #[cfg(not(macos))]
             setting.tools.push(Tool::new(
                 "libcxx",
                 &format!("{}/libcxx-{}.src.tar.xz", base_url, version),
             ));
-            #[cfg(not(macos))]
             setting.tools.push(Tool::new(
                 "libcxxabi",
                 &format!("{}/libcxxabi-{}.src.tar.xz", base_url, version),
             ));
         }
-        #[cfg(not(macos))]
+        #[cfg(not(target_os = "macos"))]
         {
             setting.tools.push(Tool::new(
                 "libunwind",
