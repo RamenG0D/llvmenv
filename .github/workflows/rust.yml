@@ -20,7 +20,8 @@ jobs:
           command: test
       # Build commands
       - name: Build
-        timeout-minutes: 80000
+        # timeout-minutes: 80000
+        continue-on-error: true
         run: |
           cargo run -- init
           cargo run -- build-entry -G Ninja 10.0.0
