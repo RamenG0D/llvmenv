@@ -12,7 +12,8 @@ jobs:
       strategy:
         # steps
         steps:
-        - uses: threeal/cmake-action@main
+        - name: CMake Action
+          uses: threeal/cmake-action@v1.3.0
           with:
             run-build: false
             generator: Ninja
