@@ -21,8 +21,9 @@ jobs:
       # Build commands
       - name: Build
         timeout-minutes: 80000
-        run: cargo run -- init
-        run: cargo run -- build-entry -G Ninja 10.0.0
+        run: |
+          cargo run -- init
+          cargo run -- build-entry -G Ninja 10.0.0
 
   # windows:
   #   runs-on: windows-2019
