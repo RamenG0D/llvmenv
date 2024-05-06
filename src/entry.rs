@@ -420,6 +420,10 @@ impl Entry {
                 version
             ),
         ));
+        setting.tools.push(Tool::new(
+            "clang-tools-extra",
+            &format!("{}/clang-tools-extra-{}.src.tar.xz", base_url, version),
+        ));
 
         // these tools are only available from versions 16.0.0 and above
         if version >= Version::new(16, 0, 0) {
@@ -431,6 +435,7 @@ impl Entry {
                 "third-party",
                 &format!("{}/third-party-{}.src.tar.xz", base_url, version),
             ));
+            #[cfg(not(macos))]
             setting.tools.push(Tool::new(
                 "cmake",
                 &format!("{}/cmake-{}.src.tar.xz", base_url, version),
@@ -456,10 +461,7 @@ impl Entry {
             "lldb",
             &format!("{}/lldb-{}.src.tar.xz", base_url, version),
         ));
-        setting.tools.push(Tool::new(
-            "clang-tools-extra",
-            &format!("{}/clang-tools-extra-{}.src.tar.xz", base_url, version),
-        ));
+
         // unfortunately, libcxx and libcxxabi are not available for windows
         // due to current msvc limitations :(
         #[cfg(not(target_os = "windows"))]
