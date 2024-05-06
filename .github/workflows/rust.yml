@@ -16,7 +16,7 @@ jobs:
           command: test
       - name: get-cmake
       - uses: actions/checkout@v4
-        uses: lukka/get-cmake@v3.29.2
+      - uses: lukka/get-cmake@v3.29.2
       # Build commands    
       - run: cargo run -- init
       - run: cargo run -- build-entry -G Ninja 10.0.0
