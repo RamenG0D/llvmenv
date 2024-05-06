@@ -459,13 +459,12 @@ impl Entry {
                 &format!("{}/libcxxabi-{}.src.tar.xz", base_url, version),
             ));
         }
-        #[cfg(not(target_os = "macos"))]
-        {
-            setting.tools.push(Tool::new(
-                "libunwind",
-                &format!("{}/libunwind-{}.src.tar.xz", base_url, version),
-            ));
-        }
+        // #[cfg(not(target_os = "macos"))]
+        setting.tools.push(Tool::new(
+            "libunwind",
+            &format!("{}/libunwind-{}.src.tar.xz", base_url, version),
+        ));
+        
         setting.tools.push(Tool::new(
             "openmp",
             &format!("{}/openmp-{}.src.tar.xz", base_url, version),
