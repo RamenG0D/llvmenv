@@ -448,8 +448,8 @@ impl Entry {
 
         // unfortunately, libcxx and libcxxabi are not available for windows or macos
         // due to current msvc limitations, etc, :(
-        #[cfg(not(target_os = "windows"))]
-        {
+        // #[cfg(not(target_os = "windows"))]
+        // {
             setting.tools.push(Tool::new(
                 "libcxx",
                 &format!("{}/libcxx-{}.src.tar.xz", base_url, version),
@@ -458,13 +458,13 @@ impl Entry {
                 "libcxxabi",
                 &format!("{}/libcxxabi-{}.src.tar.xz", base_url, version),
             ));
-        }
+        // }
         // #[cfg(not(target_os = "macos"))]
         setting.tools.push(Tool::new(
             "libunwind",
             &format!("{}/libunwind-{}.src.tar.xz", base_url, version),
         ));
-        
+
         setting.tools.push(Tool::new(
             "openmp",
             &format!("{}/openmp-{}.src.tar.xz", base_url, version),
