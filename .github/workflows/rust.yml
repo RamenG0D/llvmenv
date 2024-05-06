@@ -19,7 +19,7 @@ jobs:
       uses: lukka/get-cmake@v3.29.2
     # Build commands    
     - run: cargo run -- init
-    - run: cargo run -- build-entry -G vs 10.0.0
+    - run: cargo run -- build-entry 10.0.0
 
   # windows:
   #   runs-on: windows-2019
