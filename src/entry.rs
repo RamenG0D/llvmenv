@@ -215,7 +215,7 @@ impl Tool {
         match self.relative_path {
             Some(ref rel_path) => rel_path.to_string(),
             None => match self.name.as_str() {
-                "mlir" | "cmake" | "clang" | "lld" | "lldb" | "polly" => format!("tools/{}", self.name),
+                "third-party" | "mlir" | "cmake" | "clang" | "lld" | "lldb" | "polly" => format!("tools/{}", self.name),
                 "clang-tools-extra" => "tools/clang/tools/clang-tools-extra".into(),
                 "compiler-rt" | "libcxx" | "libcxxabi" | "libunwind" | "openmp" => {
                     format!("projects/{}", self.name)
