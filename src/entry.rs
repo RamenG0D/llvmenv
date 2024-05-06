@@ -421,7 +421,6 @@ impl Entry {
                 "third-party",
                 &format!("{}/third-party-{}.src.tar.xz", base_url, version),
             ));
-            #[cfg(not(macos))]
             setting.tools.push(Tool::new(
                 "cmake",
                 &format!("{}/cmake-{}.src.tar.xz", base_url, version),
@@ -449,7 +448,7 @@ impl Entry {
 
         // unfortunately, libcxx and libcxxabi are not available for windows or macos
         // due to current msvc limitations, etc, :(
-        #[cfg(target_os = "linux")]
+        #[cfg(not(target_os = "windows"))]
         {
             setting.tools.push(Tool::new(
                 "libcxx",
