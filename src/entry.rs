@@ -466,10 +466,12 @@ impl Entry {
         // due to current msvc limitations :(
         #[cfg(not(target_os = "windows"))]
         {
+            #[cfg(not(macos))]
             setting.tools.push(Tool::new(
                 "libcxx",
                 &format!("{}/libcxx-{}.src.tar.xz", base_url, version),
-            ));        
+            ));
+            #[cfg(not(macos))]
             setting.tools.push(Tool::new(
                 "libcxxabi",
                 &format!("{}/libcxxabi-{}.src.tar.xz", base_url, version),
