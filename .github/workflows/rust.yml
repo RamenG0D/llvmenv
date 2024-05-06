@@ -28,8 +28,9 @@ jobs:
         # timeout-minutes: 80000
         continue-on-error: true
         run: |
-          cargo run -- init
-          cargo run -- build-entry -G Ninja 18.0.1
+          cargo install --path .
+          llvmenv init
+          llvmenv build-entry -G Ninja 18.0.1
 
   # windows:
   #   runs-on: windows-2019
