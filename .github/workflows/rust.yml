@@ -6,26 +6,25 @@ jobs:
   build:
     runs-on: ${{ matrix.os }}
 #    fail-fast: false
-    
-    matrix:
-      os: [ubuntu-latest, windows-latest, macos-latest]
-      strategy:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
         # steps
         steps:
-        - name: CMake Action
-          uses: threeal/cmake-action@v1.3.0
-          with:
-            run-build: false
-            generator: Ninja
-            c-compiler: clang
-            cxx-compiler: clang++
-        - uses: actions/checkout@v4
-        - uses: actions-rs/cargo@v1
-          with:
-            command: test
-        # Build commands    
-        - run: cargo run -- init
-        - run: cargo run -- build-entry -G vs 10.0.0
+          - name: CMake Action
+            uses: threeal/cmake-action@v1.3.0
+            with:
+              run-build: false
+              generator: Ninja
+              c-compiler: clang
+              cxx-compiler: clang++
+          - uses: actions/checkout@v4
+          - uses: actions-rs/cargo@v1
+            with:
+              command: test
+          # Build commands    
+          - run: cargo run -- init
+          - run: cargo run -- build-entry -G vs 10.0.0
 
   # windows:
   #   runs-on: windows-2019
