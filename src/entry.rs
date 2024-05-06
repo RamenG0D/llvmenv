@@ -428,7 +428,7 @@ impl Entry {
             "polly",
             &format!("{}/polly-{}.src.tar.xz", base_url, version),
         ));
-        #[cfg(not(osx))]
+        #[cfg(not(macos))]
         {
             setting.tools.push(Tool::new(
                 "compiler-rt",
