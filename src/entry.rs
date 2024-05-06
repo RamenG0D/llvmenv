@@ -461,6 +461,7 @@ impl Entry {
                 &format!("{}/libcxxabi-{}.src.tar.xz", base_url, version),
             ));
         }
+        #[cfg(not(macos))]
         setting.tools.push(Tool::new(
             "libunwind",
             &format!("{}/libunwind-{}.src.tar.xz", base_url, version),
