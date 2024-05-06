@@ -435,7 +435,6 @@ impl Entry {
                 "third-party",
                 &format!("{}/third-party-{}.src.tar.xz", base_url, version),
             ));
-            #[cfg(not(macos))]
             setting.tools.push(Tool::new(
                 "cmake",
                 &format!("{}/cmake-{}.src.tar.xz", base_url, version),
