@@ -7,6 +7,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     # steps
@@ -17,9 +18,11 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
-      # Build commands    
-      - run: cargo run -- init
-      - run: cargo run -- build-entry -G Ninja 10.0.0
+      # Build commands
+      - name: Build
+        timeout-minutes: 80000
+        run: cargo run -- init
+        run: cargo run -- build-entry -G Ninja 10.0.0
 
   # windows:
   #   runs-on: windows-2019
