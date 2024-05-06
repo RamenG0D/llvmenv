@@ -30,7 +30,7 @@ jobs:
         run: |
           cargo install --path .
           llvmenv init
-          llvmenv build-entry -G Ninja 18.0.1
+          llvmenv build-entry -G Ninja 18.1.0
 
   # windows:
   #   runs-on: windows-2019
