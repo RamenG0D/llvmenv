@@ -428,10 +428,13 @@ impl Entry {
             "polly",
             &format!("{}/polly-{}.src.tar.xz", base_url, version),
         ));
-        setting.tools.push(Tool::new(
-            "compiler-rt",
-            &format!("{}/compiler-rt-{}.src.tar.xz", base_url, version),
-        ));
+        #[cfg(not(osx))]
+        {
+            setting.tools.push(Tool::new(
+                "compiler-rt",
+                &format!("{}/compiler-rt-{}.src.tar.xz", base_url, version),
+            ));
+        }
         setting.tools.push(Tool::new(
             "lld",
             &format!("{}/lld-{}.src.tar.xz", base_url, version),
