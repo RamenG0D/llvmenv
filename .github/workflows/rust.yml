@@ -42,12 +42,12 @@ jobs:
   # macos:
   #   runs-on: macos-10.15
   #   steps:
-  #   - uses: actions/checkout@v1
-  #   - uses: actions-rs/cargo@v1
-  #     with:
-  #       command: test
-  #   - run: cargo run -- init
-  #   - run: cargo run -- build-entry 10.0.0
+      # - uses: actions/checkout@v1
+      # - uses: actions-rs/cargo@v1
+      #   with:
+      #     command: test
+      # - run: cargo run -- init
+      # - run: cargo run -- build-entry 10.0.0
 
   # linux:
   #   runs-on: ubuntu-18.04
@@ -63,11 +63,11 @@ jobs:
   check-format:
     runs-on: ubuntu-18.04
     steps:
-    - uses: actions/checkout@v1
-    - uses: actions-rs/cargo@v1
-      with:
-        command: fmt
-        args: -- --check
+      - uses: actions/checkout@v1
+      - uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: -- --check
 
   check-clippy:
     runs-on: ubuntu-18.04
