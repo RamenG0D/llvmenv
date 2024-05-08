@@ -27,8 +27,7 @@ jobs:
             cache: 'pip'
       - run: pip install setuptools
       # Build commands
-      - name: llvm_init
-        timeout-minutes: 800000
+      - name: build
         continue-on-error: true
         run: |
           cargo install --path .
