@@ -34,7 +34,6 @@ jobs:
           cargo install --path .
           llvmenv init
       - name: Build LLVM
-        if: ${{ matrix.os == windows-latest }}
         run: llvmenv build-entry -G Ninja -t Debug $env:llvm_version
         # if: ${{ matrix.os != windows-latest }}
         # run: llvmenv build-entry -G Ninja -t Debug $llvm_version
