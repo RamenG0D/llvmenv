@@ -46,22 +46,23 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           export INSTALL_PATH="$HOME/.local/share/llvmenv/${{ env.llvm_version }}"
-          echo "Path Set to $INSTALL_PATH"
+          echo "Path Set to ${{ env.INSTALL_PATH }}"
 
       - name: Set Install Path Macos
         if: runner.os == 'Macos'
         run: |
           export INSTALL_PATH="$HOME/Library/Application Support/llvmenv/${{ env.llvm_version }}"
-          echo "Path Set to $INSTALL_PATH"
+          echo "Path Set to ${{ env.INSTALL_PATH }}"
 
       - name: Set Install Path Windows
         if: runner.os == 'Windows'
         run: |
           $env:INSTALL_PATH = %localappdata%\llvmenv\${{ env.llvm_version }}
-          echo "Path Set to $INSTALL_PATH"
+          echo "Path Set to ${{ env.INSTALL_PATH }}"
 
       - name: test
         run: |
+          echo "Path: '${{ env.INSTALL_PATH }}'"
           mkdir ${{ env.INSTALL_PATH }}
         
       - name: ${{ matrix.os }}-build-artifacts
