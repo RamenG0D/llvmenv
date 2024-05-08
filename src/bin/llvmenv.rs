@@ -1,3 +1,4 @@
+use llvmenv::error::FileIoConvert;
 use llvmenv::{config::cache_dir, error::CommandExt};
 use llvmenv::*;
 
@@ -187,7 +188,12 @@ fn main() -> error::Result<()> {
             };
             if discard {
                 // dir may or may not exist yet we dont want to error if it does not
-                let _ = entry.clean_cache_dir();
+                if bdir.exists() {
+                    // remove the directory and all its contents
+                    std::fs::remove_dir_all(&bdir).with(&bdir).unwrap();
+                }
+            } else {
+                info!("source directory: {}", bdir.display());
             }
             let bdir = bdir.as_path();
             
@@ -197,6 +203,7 @@ fn main() -> error::Result<()> {
                 entry.checkout().unwrap();
             }
             if update {
+                info!("updating source, by checking for required resources!");
                 entry.update().unwrap();
             }
 
@@ -204,7 +211,11 @@ fn main() -> error::Result<()> {
             
             // discarding the initial source directory should be default behavior (unless otherwise specified by the user)
             // TODO: Add a flag to keep the source directory here
-            entry.clean_cache_dir().unwrap();
+            if discard {
+                if bdir.exists() {
+                    std::fs::remove_dir_all(&bdir).with(&bdir).unwrap();
+                }
+            }
         }
 
         LLVMEnv::Current { verbose } => {

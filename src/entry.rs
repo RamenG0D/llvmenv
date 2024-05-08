@@ -132,7 +132,7 @@ impl CMakeGenerator {
             CMakeGenerator::Ninja => vec!["-G", "Ninja"],
             CMakeGenerator::VisualStudio => vec!["-G", "Visual Studio 15 2017"],
             CMakeGenerator::VisualStudioWin64 => {
-                vec!["-G", "Visual Studio 15 2017 Win64", "-Thost=x64"]
+                vec!["-G", "Visual Studio 17 2022 Win64", "-Thost=x64"]
             }
         }
         .into_iter()
@@ -269,6 +269,10 @@ pub struct EntrySetting {
     /// Additional LLVM build options
     #[serde(default)]
     pub option: HashMap<String, String>,
+
+    /// Wether or not this is an individual tarball or a whole project
+    #[serde(default)]
+    pub project: bool,
 }
 
 /// Describes how to compile LLVM/Clang
@@ -433,7 +437,6 @@ impl Entry {
             ));
         }
         
-        // old defaults
         setting.tools.push(Tool::new(
             "polly",
             &format!("{}/polly-{}.src.tar.xz", base_url, version),
@@ -459,8 +462,7 @@ impl Entry {
         ));
         // unfortunately, libcxx and libcxxabi are not available for windows
         // due to current msvc limitations :(
-        #[cfg(not(windows))]
-        #[cfg(not(macos))]
+        #[cfg(not(target_os = "windows"))]
         {
             setting.tools.push(Tool::new(
                 "libcxx",
@@ -471,11 +473,14 @@ impl Entry {
                 &format!("{}/libcxxabi-{}.src.tar.xz", base_url, version),
             ));
         }
-        #[cfg(not(macos))]
+
+        // libunwind is not available for macos
+        #[cfg(not(target_os = "macos"))]
         setting.tools.push(Tool::new(
             "libunwind",
             &format!("{}/libunwind-{}.src.tar.xz", base_url, version),
         ));
+        
         setting.tools.push(Tool::new(
             "openmp",
             &format!("{}/openmp-{}.src.tar.xz", base_url, version),
@@ -599,14 +604,16 @@ impl Entry {
     pub fn src_dir(&self) -> Result<PathBuf> {
         Ok(match self {
             Entry::Remote { name, .. } => {
-                /*#[cfg(windows)]
-                {
-                    cache_dir()?.join(name)
+                match self.setting().project {
+                    true => {
+                        info!("Project mode enabled");
+                        cache_dir()?.join(name)
+                    },
+                    false => {
+                        info!("Project mode disabled");
+                        cache_dir()?.join(name).join("llvm")
+                    }
                 }
-                #[cfg(not(windows))]
-                {*/
-                    cache_dir()?.join(name).join("llvm")
-                // }
             },
             Entry::Local { path, .. } => path.into(),
         })
@@ -634,10 +641,12 @@ impl Entry {
 
     pub fn build(&self, nproc: usize) -> Result<()> {
         self.configure()?;
+        let build_dir = self.build_dir()?;
+        info!("Build LLVM/Clang: {}", build_dir.display());
         process::Command::new("cmake")
             .args(&[
                 "--build",
-                &format!("{}", self.build_dir()?.display()),
+                &format!("{}", build_dir.display()),
                 "--target",
                 "install",
             ])
@@ -654,7 +663,12 @@ impl Entry {
     fn configure(&self) -> Result<()> {
         let setting = self.setting();
         let mut opts = setting.generator.option();
-        opts.push(format!("{}", self.src_dir()?.display()));
+        let dir = if setting.project {
+            self.src_dir()?.join("llvm")
+        } else {
+            self.src_dir()?
+        };
+        opts.push(format!("{}", dir.display()));
 
         opts.push(format!(
             "-DCMAKE_INSTALL_PREFIX={}",
