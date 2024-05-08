@@ -42,16 +42,22 @@ jobs:
       #   run: |
       #     llvmenv global ${{ env.llvm_version }}
 
-      - name: Set Install Path Unix
-        if: runner.os != 'Windows'
+      - name: Set Install Path Linux
+        if: runner.os == 'Linux'
         run: |
-          export INSTALL_PATH="$(llvmenv prefix)"
+          export INSTALL_PATH="$HOME/.local/share/llvmenv/${{ env.llvm_version }}"
+          echo "Path Set to $INSTALL_PATH"
+
+      - name: Set Install Path Macos
+        if: runner.os == 'Macos'
+        run: |
+          export INSTALL_PATH="$HOME/Library/Application Support/llvmenv/${{ env.llvm_version }}"
           echo "Path Set to $INSTALL_PATH"
 
       - name: Set Install Path Windows
         if: runner.os == 'Windows'
         run: |
-          $env:INSTALL_PATH = $(llvmenv prefix)
+          $env:INSTALL_PATH = %localappdata%\llvmenv\${{ env.llvm_version }}
           echo "Path Set to $INSTALL_PATH"
 
       - name: test
