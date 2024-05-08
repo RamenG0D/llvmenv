@@ -33,45 +33,30 @@ jobs:
           cargo install --path .
           llvmenv init
           llvmenv build-entry -G Ninja -t Debug ${{ env.llvm_version }}
-      - name: Upload a Build Artifact
+      - name: Find Build MacOS Install
+        if: ${{ matrix.os == 'macos-latest' }}
+        env:
+          INSTALL_PATH: "/Users/runner/Library/Application Support/llvmenv/${{ env.llvm_version }}"
+      - name: Find Build Windows Install
+        if: ${{ matrix.os == 'windows-latest' }}
+        env:
+          INSTALL_PATH: "%appdata%\\..\\Local\\llvmenv\\${{ env.llvm_version }}"
+      - name: Find Build MacOS Install
+        if: ${{ matrix.os == 'macos-latest' }}
+        env:
+          INSTALL_PATH: "/Users/runner/Library/Application Support/llvmenv/${{ env.llvm_version }}"
+      - name: Find Build Linux Install
+        if: ${{ matrix.os == 'windows-latest' }}
+        env:
+          INSTALL_PATH: "~/.cache/llvmenv/${{ env.llvm_version }}"
+        
+      - name: Upload a Build Artifact ${{ matrix.os }}
         uses: actions/upload-artifact@v4.3.3
         with:
-          name: llvm-build
-          path: ~/.cache/llvmenv/${{ env.llvm_version }}
+          path: ${{ env.INSTALL_PATH }}
           retention-days: 40
           compression-level: 8
           overwrite: true
-
-  # windows:
-  #   runs-on: windows-2019
-  #   steps:
-  #   - uses: actions/checkout@v1
-  #   - uses: actions-rs/cargo@v1
-  #     with:
-  #       command: test
-  #   - run: cargo run -- init
-  #   - run: cargo run -- build-entry -G vs 10.0.0
-
-  # macos:
-  #   runs-on: macos-10.15
-  #   steps:
-      # - uses: actions/checkout@v1
-      # - uses: actions-rs/cargo@v1
-      #   with:
-      #     command: test
-      # - run: cargo run -- init
-      # - run: cargo run -- build-entry 10.0.0
-
-  # linux:
-  #   runs-on: ubuntu-18.04
-  #   steps:
-  #     - uses: actions/checkout@v1
-  #     - uses: actions-rs/cargo@v1
-  #       with:
-  #         command: test
-  #     - run: cargo run -- init
-  #     - run: cargo run -- build-entry 10.0.0
-      
 
   check-format:
     runs-on: ubuntu-latest
