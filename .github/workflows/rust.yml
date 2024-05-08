@@ -1,6 +1,10 @@
 name: Rust
 
-on: push
+on: 
+  push:
+    # no restrictions here friend just whenever theres a push
+  workflow_dispatch:
+    # Nutt'n here to see
 env:
   llvm_version: 18.1.5
 
@@ -33,23 +37,22 @@ jobs:
           cargo install --path .
           llvmenv init
           llvmenv build-entry -G Ninja -t Debug ${{ env.llvm_version }}
-        # 
-      - name: Find Windows Install
-        if: ${{ matrix.os == 'windows-latest' }}
+
+      - name: Set Build
+        run: |
+          llvmenv global ${{ env.llvm_version }}
+
+      - name: Set Install Path Unix
+        if: runner.os != 'Windows'
+        run: |
+          export INSTALL_PATH = $(llvmenv prefix)
+          echo "Path Set to $INSTALL_PATH"
+
+      - name: Set Install Path Windows
+        if: runner.os == 'Windows'
         run: |
           $env:INSTALL_PATH = $(llvmenv prefix)
-        #
-      - name: Find MacOS Install
-        if: ${{ matrix.os == 'macos-latest' }}
-        run: |
-          export INSTALL_PATH = $(llvmenv prefix)
-        #env:
-        #  INSTALL_PATH: "/Users/runner/Library/Application Support/llvmenv/${{ env.llvm_version }}"
-        #
-      - name: Find Build Linux Install
-        if: ${{ matrix.os == 'windows-latest' }}
-        run: |
-          export INSTALL_PATH = $(llvmenv prefix)
+          echo "Path Set to $INSTALL_PATH"
         
       - name: Upload a Build Artifact ${{ matrix.os }}
         uses: actions/upload-artifact@v4.3.3
