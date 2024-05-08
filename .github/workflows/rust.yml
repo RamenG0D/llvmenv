@@ -1,6 +1,8 @@
 name: Rust
 
 on: push
+env:
+  llvm_version: 18.1.5
 
 jobs:
   build:
@@ -10,6 +12,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
+      
     # steps
     steps:
       - uses: actions/checkout@v4
@@ -30,7 +33,15 @@ jobs:
         run: |
           cargo install --path .
           llvmenv init
-          llvmenv build-entry -G Ninja 18.1.5
+          llvmenv build-entry -G Ninja -t Debug $llvm_version
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v4.3.3
+        with:
+          name: llvm-build
+          path: ~/.cache/llvmenv/$llvm_version
+          retention-days: 40
+          compression-level: 8
+          overwrite: true
 
   # windows:
   #   runs-on: windows-2019
