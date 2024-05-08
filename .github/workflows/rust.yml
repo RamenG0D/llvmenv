@@ -45,7 +45,7 @@ jobs:
       - name: Set Install Path Unix
         if: runner.os != 'Windows'
         run: |
-          export INSTALL_PATH = $(llvmenv prefix)
+          export INSTALL_PATH="$(llvmenv prefix)"
           echo "Path Set to $INSTALL_PATH"
 
       - name: Set Install Path Windows
