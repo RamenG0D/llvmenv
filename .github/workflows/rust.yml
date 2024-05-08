@@ -54,7 +54,7 @@ jobs:
           $env:INSTALL_PATH = $(llvmenv prefix)
           echo "Path Set to $INSTALL_PATH"
         
-      - name: Upload a Build Artifact ${{ matrix.os }}
+      - name: ${{ matrix.os }}-build-artifacts
         uses: actions/upload-artifact@v4.3.3
         with:
           path: ${{ env.INSTALL_PATH }}
