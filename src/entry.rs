@@ -215,11 +215,21 @@ impl Tool {
         match self.relative_path {
             Some(ref rel_path) => rel_path.to_string(),
             None => match self.name.as_str() {
-                "third-party" | "mlir" | "cmake" | "clang" | "lld" | "lldb" | "polly" => format!("tools/{}", self.name),
-                "clang-tools-extra" => "tools/clang/tools/clang-tools-extra".into(),
-                "compiler-rt" | "libcxx" | "libcxxabi" | "libunwind" | "openmp" => {
-                    format!("projects/{}", self.name)
-                }
+                "clang-tools-extra" 
+                | "compiler-rt" 
+                | "libcxx" 
+                | "libcxxabi" 
+                | "libunwind" 
+                | "openmp" 
+                | "third-party" 
+                | "mlir" 
+                | "cmake" 
+                | "clang" 
+                | "lld" 
+                | "lldb" 
+                | "polly" => {
+                    format!("../{}", self.name)
+                },
                 _ => panic!(
                     "Unknown tool. Please specify its relative path explicitly: {}",
                     self.name
@@ -589,14 +599,14 @@ impl Entry {
     pub fn src_dir(&self) -> Result<PathBuf> {
         Ok(match self {
             Entry::Remote { name, .. } => {
-                #[cfg(windows)]
+                /*#[cfg(windows)]
                 {
                     cache_dir()?.join(name)
                 }
                 #[cfg(not(windows))]
-                {
+                {*/
                     cache_dir()?.join(name).join("llvm")
-                }
+                // }
             },
             Entry::Local { path, .. } => path.into(),
         })

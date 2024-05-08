@@ -202,9 +202,9 @@ fn main() -> error::Result<()> {
 
             entry.build(nproc).unwrap();
             
-            if discard {
-                entry.clean_cache_dir().unwrap();
-            }
+            // discarding the initial source directory should be default behavior (unless otherwise specified by the user)
+            // TODO: Add a flag to keep the source directory here
+            entry.clean_cache_dir().unwrap();
         }
 
         LLVMEnv::Current { verbose } => {
