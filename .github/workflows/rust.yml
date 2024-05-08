@@ -45,17 +45,17 @@ jobs:
       - name: Set Install Path Linux
         if: runner.os == 'Linux'
         run: |
-          mkdir $HOME/.local/share/llvmenv/${{ env.llvm_version }}
+          mkdir "$HOME/.local/share/llvmenv/${{ env.llvm_version }}"
 
       - name: Set Install Path Macos
         if: runner.os == 'Macos'
         run: |
-          mkdir $HOME/Library/Application Support/llvmenv/${{ env.llvm_version }}
+          mkdir "$HOME/Library/Application Support/llvmenv/${{ env.llvm_version }}"
 
       - name: Set Install Path Windows
         if: runner.os == 'Windows'
         run: |
-          mkdir %localappdata%\llvmenv\${{ env.llvm_version }}
+          mkdir "%localappdata%\llvmenv\${{ env.llvm_version }}"
         
       - name: ${{ matrix.os }}-build-artifacts
         uses: actions/upload-artifact@v4.3.3
