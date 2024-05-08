@@ -424,6 +424,10 @@ impl Entry {
             "clang-tools-extra",
             &format!("{}/clang-tools-extra-{}.src.tar.xz", base_url, version),
         ));
+        setting.tools.push(Tool::new(
+            "clang-tools-extra",
+            &format!("{}/clang-tools-extra-{}.src.tar.xz", base_url, version),
+        ));
 
         // these tools are only available from versions 16.0.0 and above
         if version >= Version::new(16, 0, 0) {
@@ -459,6 +463,21 @@ impl Entry {
             &format!("{}/lldb-{}.src.tar.xz", base_url, version),
         ));
 
+        // unfortunately, libcxx and libcxxabi are not available for windows or macos
+        // due to current msvc limitations, etc, :(
+        // #[cfg(not(target_os = "windows"))]
+        // {
+        setting.tools.push(Tool::new(
+            "libcxx",
+            &format!("{}/libcxx-{}.src.tar.xz", base_url, version),
+        ));
+        setting.tools.push(Tool::new(
+            "libcxxabi",
+            &format!("{}/libcxxabi-{}.src.tar.xz", base_url, version),
+        ));
+        // }
+        // #[cfg(not(target_os = "macos"))]
+
         // unfortunately, libcxx and libcxxabi are not available for windows
         // due to current msvc limitations :(
         #[cfg(not(target_os = "windows"))]
@@ -479,6 +498,7 @@ impl Entry {
             "libunwind",
             &format!("{}/libunwind-{}.src.tar.xz", base_url, version),
         ));
+
 
         setting.tools.push(Tool::new(
             "openmp",
