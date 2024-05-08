@@ -19,28 +19,28 @@ jobs:
       
     # steps
     steps:
-      - uses: actions/checkout@v4
-      - name: get-cmake
-        uses: lukka/get-cmake@v3.29.2
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-      - name: Setup Python
-        uses: actions/setup-python@v5.1.0
-        with:
-            cache: 'pip'
-      - run: pip install setuptools
-      # Build commands
-      - name: build
-        continue-on-error: true
-        run: |
-          cargo install --path .
-          llvmenv init
-          llvmenv build-entry -G Ninja -t Debug ${{ env.llvm_version }}
+      # - uses: actions/checkout@v4
+      # - name: get-cmake
+      #   uses: lukka/get-cmake@v3.29.2
+      # - uses: actions-rs/cargo@v1
+      #   with:
+      #     command: test
+      # - name: Setup Python
+      #   uses: actions/setup-python@v5.1.0
+      #   with:
+      #       cache: 'pip'
+      # - run: pip install setuptools
+      # # Build commands
+      # - name: build
+      #   continue-on-error: true
+      #   run: |
+      #     cargo install --path .
+      #     llvmenv init
+      #     llvmenv build-entry -G Ninja -t Debug ${{ env.llvm_version }}
 
-      - name: Set Build
-        run: |
-          llvmenv global ${{ env.llvm_version }}
+      # - name: Set Build
+      #   run: |
+      #     llvmenv global ${{ env.llvm_version }}
 
       - name: Set Install Path Unix
         if: runner.os != 'Windows'
@@ -53,13 +53,16 @@ jobs:
         run: |
           $env:INSTALL_PATH = $(llvmenv prefix)
           echo "Path Set to $INSTALL_PATH"
+
+      - name: test
+        run: |
+          mkdir ${{ env.INSTALL_PATH }}
         
       - name: ${{ matrix.os }}-build-artifacts
         uses: actions/upload-artifact@v4.3.3
         with:
           path: ${{ env.INSTALL_PATH }}
-          retention-days: 40
-          compression-level: 8
+          retention-days: 1
           overwrite: true
 
   check-format:
