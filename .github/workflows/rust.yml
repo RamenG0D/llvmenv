@@ -33,22 +33,23 @@ jobs:
           cargo install --path .
           llvmenv init
           llvmenv build-entry -G Ninja -t Debug ${{ env.llvm_version }}
-      - name: Find Build MacOS Install
-        if: ${{ matrix.os == 'macos-latest' }}
-        env:
-          INSTALL_PATH: "/Users/runner/Library/Application Support/llvmenv/${{ env.llvm_version }}"
-      - name: Find Build Windows Install
+        # 
+      - name: Find Windows Install
         if: ${{ matrix.os == 'windows-latest' }}
-        env:
-          INSTALL_PATH: "%appdata%\\..\\Local\\llvmenv\\${{ env.llvm_version }}"
-      - name: Find Build MacOS Install
+        run: |
+          $env:INSTALL_PATH = $(llvmenv prefix)
+        #
+      - name: Find MacOS Install
         if: ${{ matrix.os == 'macos-latest' }}
-        env:
-          INSTALL_PATH: "/Users/runner/Library/Application Support/llvmenv/${{ env.llvm_version }}"
+        run: |
+          export INSTALL_PATH = $(llvmenv prefix)
+        #env:
+        #  INSTALL_PATH: "/Users/runner/Library/Application Support/llvmenv/${{ env.llvm_version }}"
+        #
       - name: Find Build Linux Install
         if: ${{ matrix.os == 'windows-latest' }}
-        env:
-          INSTALL_PATH: "~/.cache/llvmenv/${{ env.llvm_version }}"
+        run: |
+          export INSTALL_PATH = $(llvmenv prefix)
         
       - name: Upload a Build Artifact ${{ matrix.os }}
         uses: actions/upload-artifact@v4.3.3
