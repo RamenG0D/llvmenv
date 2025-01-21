@@ -33,7 +33,7 @@ impl Build {
     }
 
     pub fn from_path(path: &Path) -> Self {
-        let name = path.file_name().unwrap().to_str().unwrap();     
+        let name = path.file_name().unwrap().to_str().unwrap();
         Build {
             name: name.into(),
             prefix: path.to_owned(),
@@ -44,7 +44,7 @@ impl Build {
     pub fn from_name(name: &str) -> Result<Self> {
         if name == "system" {
             return Ok(Self::system());
-        } 
+        }
         Ok(Build {
             name: name.into(),
             prefix: data_dir()?.join(name),
@@ -118,7 +118,7 @@ fn local_builds() -> Result<Vec<Build>> {
         .unwrap()
         .filter_map(|path| {
             if let Ok(path) = path {
-                path.parent().map(|path| Build::from_path(path))
+                path.parent().map(Build::from_path)
             } else {
                 None
             }
@@ -199,7 +199,8 @@ mod tests {
     #[test]
     fn test_parse_version() -> Result<()> {
         // https://github.com/termoshtt/llvmenv/issues/36
-        let version = "clang version 6.0.1-svn331815-1~exp1~20180510084719.80 (branches/release_60)";
+        let version =
+            "clang version 6.0.1-svn331815-1~exp1~20180510084719.80 (branches/release_60)";
         assert_eq!(parse_version(version)?, Version::new(6, 0, 1));
 
         let version = "clang version 10.0.0 (https://github.com/llvm/clang 65acf43270ea2894dffa0d0b292b92402f80c8cb)";

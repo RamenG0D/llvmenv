@@ -67,10 +67,10 @@
 
 use itertools::*;
 use log::{info, warn};
+use regex::Regex;
 use semver::Version;
 use serde_derive::Deserialize;
-use std::{collections::HashMap, fs, path::PathBuf, process, str::FromStr};
-use regex::Regex;
+use std::{cmp::Ordering, collections::HashMap, fs, path::PathBuf, process, str::FromStr};
 
 use crate::{config::*, error::*, resource::*};
 
@@ -87,9 +87,10 @@ use crate::{config::*, error::*, resource::*};
 /// assert_eq!(CMakeGenerator::from_str("VisualStudio").unwrap(), CMakeGenerator::VisualStudio);
 /// assert!(CMakeGenerator::from_str("MySuperBuilder").is_err());
 /// ```
-#[derive(Deserialize, PartialEq, Debug, Clone)]
+#[derive(Deserialize, PartialEq, Debug, Clone, Default)]
 pub enum CMakeGenerator {
     /// Use platform default generator (without -G option)
+    #[default]
     Platform,
     /// Unix Makefile
     Makefile,
@@ -99,12 +100,6 @@ pub enum CMakeGenerator {
     VisualStudio,
     /// Visual Studio 15 2017 Win64
     VisualStudioWin64,
-}
-
-impl Default for CMakeGenerator {
-    fn default() -> Self {
-        CMakeGenerator::Platform
-    }
 }
 
 impl FromStr for CMakeGenerator {
@@ -155,18 +150,13 @@ impl CMakeGenerator {
 }
 
 /// CMake build type
-#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq, Default)]
 pub enum BuildType {
-    Debug, 
+    Debug,
+    #[default]
     Release,
     RelWithDebInfo,
     MinSizeRel,
-}
-
-impl Default for BuildType {
-    fn default() -> Self {
-        BuildType::Release
-    }
 }
 
 impl FromStr for BuildType {
@@ -215,21 +205,11 @@ impl Tool {
         match self.relative_path {
             Some(ref rel_path) => rel_path.to_string(),
             None => match self.name.as_str() {
-                "clang-tools-extra" 
-                | "compiler-rt" 
-                | "libcxx" 
-                | "libcxxabi" 
-                | "libunwind" 
-                | "openmp" 
-                | "third-party" 
-                | "mlir" 
-                | "cmake" 
-                | "clang" 
-                | "lld" 
-                | "lldb" 
+                "clang-tools-extra" | "compiler-rt" | "libcxx" | "libcxxabi" | "libunwind"
+                | "openmp" | "third-party" | "mlir" | "cmake" | "clang" | "lld" | "lldb"
                 | "polly" => {
                     format!("../{}", self.name)
-                },
+                }
                 _ => panic!(
                     "Unknown tool. Please specify its relative path explicitly: {}",
                     self.name
@@ -307,7 +287,7 @@ fn load_entry_toml(toml_str: &str) -> Result<Vec<Entry>> {
 pub fn official_releases() -> Vec<Entry> {
     let mut command = process::Command::new("git");
     let out = command
-        .args(&[
+        .args([
             "ls-remote",
             "--tags",
             "https://github.com/llvm/llvm-project.git",
@@ -318,51 +298,59 @@ pub fn official_releases() -> Vec<Entry> {
 
     let output = String::from_utf8_lossy(&out);
     let re = Regex::new(r"(\d+)\.(\d+)\.(\d+)").unwrap();
-    let tags: Vec<String> = re.captures_iter(&output).map(|cap| cap[0].to_string()).fold(Vec::new(), |mut x, y| {
-        // we want to filter out the tags that are not in the form of x.y.z
-        // by greatest to smallest version numbers if x1 == x2, and y1 == y2, then z1 == z2, then we discard the tag its a duplicate
-        let version = Version::parse(&y).unwrap();
-        let mut found = false;
-        for tag in x.iter() {
-            let tag_version = Version::parse(tag).unwrap();
-            if version.major == tag_version.major && version.minor == tag_version.minor && version.patch == tag_version.patch {
-                found = true;
-                break;
-            }
-        }
-        if !found {
-            // now we check if x1 > x2, if so we insert x1 before x2
-            let mut index = 0;
-            for (i, tag) in x.iter().enumerate() {
+    let tags: Vec<String> = re
+        .captures_iter(&output)
+        .map(|cap| cap[0].to_string())
+        .fold(Vec::new(), |mut x, y| {
+            // we want to filter out the tags that are not in the form of x.y.z
+            // by greatest to smallest version numbers if x1 == x2, and y1 == y2, then z1 == z2, then we discard the tag its a duplicate
+            let version = Version::parse(&y).unwrap();
+            let mut found = false;
+            for tag in x.iter() {
                 let tag_version = Version::parse(tag).unwrap();
-                if version.major > tag_version.major {
-                    index = i;
+                if version.major == tag_version.major
+                    && version.minor == tag_version.minor
+                    && version.patch == tag_version.patch
+                {
+                    found = true;
                     break;
-                } else if version.major == tag_version.major {
-                    if version.minor > tag_version.minor {
-                        index = i;
-                        break;
-                    } else if version.minor == tag_version.minor {
-                        if version.patch > tag_version.patch {
+                }
+            }
+            if !found {
+                // now we check if x1 > x2, if so we insert x1 before x2
+                let mut index = 0;
+                for (i, tag) in x.iter().enumerate() {
+                    let tag_version = Version::parse(tag).unwrap();
+                    let (major, minor, patch) = (
+                        version.major.cmp(&tag_version.major),
+                        version.minor.cmp(&tag_version.minor),
+                        version.patch.cmp(&tag_version.patch),
+                    );
+                    match (major, minor, patch) {
+                        (Ordering::Greater, _, _)
+                        | (Ordering::Equal, Ordering::Greater, _)
+                        | (Ordering::Equal, Ordering::Equal, Ordering::Greater) => {
                             index = i;
                             break;
                         }
+                        _ => {}
                     }
                 }
+                x.insert(index, y);
             }
-            x.insert(index, y);
-        }
-        x
-    });
+            x
+        });
 
     // finally convert the output to a string
     let tags = tags.join("\n");
 
     // Parse the tags into a vector of entries
-    tags.lines().map(|tag| {
-        let version = Version::parse(tag).unwrap();
-        Entry::official(version.major, version.minor, version.patch)
-    }).collect()
+    tags.lines()
+        .map(|tag| {
+            let version = Version::parse(tag).unwrap();
+            Entry::official(version.major, version.minor, version.patch)
+        })
+        .collect()
 }
 
 pub fn load_entries() -> Result<Vec<Entry>> {
@@ -436,18 +424,18 @@ impl Entry {
                 &format!("{}/cmake-{}.src.tar.xz", base_url, version),
             ));
         }
-        
+
         setting.tools.push(Tool::new(
             "polly",
             &format!("{}/polly-{}.src.tar.xz", base_url, version),
         ));
-        
-        #[cfg(not(macos))]
+
+        #[cfg(not(target_os = "macos"))]
         setting.tools.push(Tool::new(
             "compiler-rt",
             &format!("{}/compiler-rt-{}.src.tar.xz", base_url, version),
         ));
-        
+
         setting.tools.push(Tool::new(
             "lld",
             &format!("{}/lld-{}.src.tar.xz", base_url, version),
@@ -467,7 +455,7 @@ impl Entry {
             setting.tools.push(Tool::new(
                 "libcxx",
                 &format!("{}/libcxx-{}.src.tar.xz", base_url, version),
-            ));        
+            ));
             setting.tools.push(Tool::new(
                 "libcxxabi",
                 &format!("{}/libcxxabi-{}.src.tar.xz", base_url, version),
@@ -480,14 +468,14 @@ impl Entry {
             "libunwind",
             &format!("{}/libunwind-{}.src.tar.xz", base_url, version),
         ));
-        
+
         setting.tools.push(Tool::new(
             "openmp",
             &format!("{}/openmp-{}.src.tar.xz", base_url, version),
         ));
-        
+
         let name = version.to_string();
-        
+
         Entry::parse_setting(&name, Some(version), setting).unwrap()
     }
 
@@ -603,16 +591,14 @@ impl Entry {
 
     pub fn src_dir(&self) -> Result<PathBuf> {
         Ok(match self {
-            Entry::Remote { name, .. } => {
-                match self.setting().project {
-                    true => {
-                        info!("Project mode enabled");
-                        cache_dir()?.join(name)
-                    },
-                    false => {
-                        info!("Project mode disabled");
-                        cache_dir()?.join(name).join("llvm")
-                    }
+            Entry::Remote { name, .. } => match self.setting().project {
+                true => {
+                    info!("Project mode enabled");
+                    cache_dir()?.join(name)
+                }
+                false => {
+                    info!("Project mode disabled");
+                    cache_dir()?.join(name).join("llvm")
                 }
             },
             Entry::Local { path, .. } => path.into(),
@@ -644,15 +630,14 @@ impl Entry {
         let build_dir = self.build_dir()?;
         info!("Build LLVM/Clang: {}", build_dir.display());
         process::Command::new("cmake")
-            .args(&[
+            .args([
                 "--build",
                 &format!("{}", build_dir.display()),
                 "--target",
                 "install",
             ])
             .args(
-                &self
-                    .setting()
+                self.setting()
                     .generator
                     .build_option(nproc, self.setting().build_type),
             )

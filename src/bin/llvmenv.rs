@@ -1,11 +1,13 @@
 use llvmenv::error::FileIoConvert;
-use llvmenv::{config::cache_dir, error::CommandExt};
 use llvmenv::*;
+use llvmenv::{config::cache_dir, error::CommandExt};
 
 use log::info;
 use simplelog::*;
 use std::{
-    env, path::PathBuf, process::{exit, Command}
+    env,
+    path::PathBuf,
+    process::{exit, Command},
 };
 use structopt::StructOpt;
 
@@ -22,7 +24,10 @@ enum LLVMEnv {
     #[structopt(name = "builds", about = "List usable build")]
     Builds {},
 
-    #[structopt(name = "clean", about = "Cleans all whole build cache or specific build version cache")]
+    #[structopt(
+        name = "clean",
+        about = "Cleans all whole build cache or specific build version cache"
+    )]
     Clean {
         #[structopt(short = "a", long = "all", help = "clean all build cache")]
         all: bool,
@@ -117,12 +122,13 @@ enum LLVMEnv {
 fn main() -> error::Result<()> {
     TermLogger::init(
         LevelFilter::Info,
-        ConfigBuilder::new().set_time_to_local(true).build(),
+        ConfigBuilder::new().set_time_offset_to_local().expect("time offset").build(),
         TerminalMode::Mixed,
+		ColorChoice::Auto,
     )
     .or(SimpleLogger::init(
         LevelFilter::Info,
-        ConfigBuilder::new().set_time_to_local(true).build(),
+        ConfigBuilder::new().set_time_offset_to_local().expect("time offset").build(),
     ))
     .unwrap();
 
@@ -179,11 +185,17 @@ fn main() -> error::Result<()> {
         } => {
             let mut entry = entry::load_entry(&name)?;
             let nproc = nproc.unwrap_or_else(num_cpus::get);
-            if let Some(builder) = builder { entry.set_builder(&builder)?; }
-            if let Some(build_type) = build_type { entry.set_build_type(build_type)?; }
-            
+            if let Some(builder) = builder {
+                entry.set_builder(&builder)?;
+            }
+            if let Some(build_type) = build_type {
+                entry.set_build_type(build_type)?;
+            }
+
             let bdir = match entry {
-                llvmenv::entry::Entry::Remote { ref name, .. } => dirs::cache_dir().unwrap().join(format!("llvmenv/{}", name)),
+                llvmenv::entry::Entry::Remote { ref name, .. } => {
+                    dirs::cache_dir().unwrap().join(format!("llvmenv/{}", name))
+                }
                 llvmenv::entry::Entry::Local { ref path, .. } => path.into(),
             };
             if discard {
@@ -196,7 +208,7 @@ fn main() -> error::Result<()> {
                 info!("source directory: {}", bdir.display());
             }
             let bdir = bdir.as_path();
-            
+
             if bdir.exists() {
                 info!("source directory already exists, so skiping checkout");
             } else {
@@ -208,13 +220,11 @@ fn main() -> error::Result<()> {
             }
 
             entry.build(nproc).unwrap();
-            
+
             // discarding the initial source directory should be default behavior (unless otherwise specified by the user)
             // TODO: Add a flag to keep the source directory here
-            if discard {
-                if bdir.exists() {
-                    std::fs::remove_dir_all(&bdir).with(&bdir).unwrap();
-                }
+            if discard && bdir.exists() {
+                std::fs::remove_dir_all(bdir).with(bdir).unwrap();
             }
         }
 

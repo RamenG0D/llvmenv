@@ -15,30 +15,30 @@ categories    = []
 
 [dependencies]
 bytes = "1.1.0"
-dirs = "3.0.1"
+dirs = "6.0.0"
 fs_extra = "1.2.0"
 futures = "0.3.8"
 glob = "0.3.0"
-indicatif = "0.15.0"
-itertools = "0.9.0"
+indicatif = "0.17.9"
+itertools = "0.14.0"
 lazy_static = "1.4"
 log = "0.4.11"
 num_cpus = "1.13.0"
 regex = "1.4.2"
-reqwest = { version = "0.11.5", features = ["blocking", "stream"] }
-semver = "0.11"
+reqwest = { version = "0.12.12", features = ["blocking", "stream"] }
+semver = "1.0.25"
 serde = "1.0.117"
 serde_derive = "1.0.117"
-shellexpand = "2.0.0"
-simplelog = "0.8.0"
+shellexpand = "3.1.0"
+simplelog = "0.12.2"
 structopt = "0.3.21"
 tar = "0.4.30"
 tempfile= "3.1.0"
-thiserror = "1.0.22"
+thiserror = "2.0.11"
 tokio = { version = "1.12.0", features = ["rt-multi-thread"] }
-toml = "0.5.7"
+toml = "0.8.19"
 url = "2.2.0"
-which = { version = "4.0.2", default-features = false }
+which = { version = "7.0.1", default-features = false }
 xz2 = "0.1.6"
 
 [dev-dependencies]

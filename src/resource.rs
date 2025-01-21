@@ -128,13 +128,13 @@ impl Resource {
             .silent()
             .check_run()?;
         Command::new("git")
-            .args(&["remote", "add", "origin"])
+            .args(["remote", "add", "origin"])
             .arg(url_str)
             .current_dir(tmp_dir.path())
             .silent()
             .check_run()?;
         match Command::new("git")
-            .args(&["ls-remote"])
+            .args(["ls-remote"])
             .current_dir(tmp_dir.path())
             .silent()
             .check_run()
@@ -164,16 +164,16 @@ impl Resource {
         }
         match self {
             Resource::Svn { url, .. } => Command::new("svn")
-                .args(&["co", url.as_str(), "-r", "HEAD"])
+                .args(["co", url.as_str(), "-r", "HEAD"])
                 .arg(dest)
                 .check_run()?,
             Resource::Git { url, branch } => {
                 info!("Git clone {}", url);
                 let mut git = Command::new("git");
-                git.args(&["clone", url.as_str(), "-q", "--depth", "1"])
+                git.args(["clone", url.as_str(), "-q", "--depth", "1"])
                     .arg(dest);
                 if let Some(branch) = branch {
-                    git.args(&["-b", branch]);
+                    git.args(["-b", branch]);
                 }
                 git.check_run()?;
             }
@@ -252,8 +252,9 @@ async fn download(
         .parse()?;
     let bar = ProgressBar::new(content_length)
         .with_style(ProgressStyle::default_bar()
+			.progress_chars("#>-")
             .template("{spinner:.green} [{elapsed_precise}] [{bar:38.cyan/blue}] {bytes}/{total_bytes} ({eta}) [{bytes_per_sec}]")
-            .progress_chars("#>-"));
+			.expect("Invalid progress style"));
 
     Ok(Download {
         stream: block_on_stream(req.bytes_stream()),
