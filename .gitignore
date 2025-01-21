@@ -1,4 +1,8 @@
 Cargo.lock
 /target
+*.tar.zst
 **/*.rs.bk
 .llvmenv
+
+pkg
+PKGBUILD

@@ -82,6 +82,9 @@ pub enum Error {
         stdout: Option<String>,
         stderr: Option<String>,
     },
+
+    #[error("Unsupported shell type: {shell}")]
+    UnsupportedShell { shell: String },
 }
 
 impl Error {

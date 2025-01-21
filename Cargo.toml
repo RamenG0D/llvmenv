@@ -1,17 +1,32 @@
 [package]
 name = "llvmenv"
-version = "0.3.2"
+version = "0.4.0"
+# not really sure if its ok to stick my name in the authors list
+# the project was maintained by others and their names arent included
+# ill just be assuming that my name also shouldnt go here
+# Author of this fork: "RamenG0D"
 authors = ["Toshiki Teramura <toshiki.teramura@gmail.com>",
            "Alexander Ronald Altman <alexanderaltman@me.com>"]
-edition = "2018"
+edition = "2021"
 
 description   = "Manage LLVM/Clang builds"
 documentation = "https://docs.rs/llvmenv"
-repository    = "https://github.com/llvmenv/llvmenv"
+repository    = "https://github.com/RamenG0D/llvmenv.git"
 keywords      = ["env", "llvm", "clang"]
 license       = "MIT"
 readme        = "README.md"
-categories    = []
+categories    = ["development-tools", "system-programming"]
+
+[package.metadata.arch]
+# can theoretically work on other archs, but only tested on x86_64
+arch = ["x86_64"]
+makedepends = ["cargo"]
+optdepends = ["pixz", "tar"]
+depends = []
+provides = ["llvmenv"]
+
+[profile.release]
+lto = true
 
 [dependencies]
 bytes = "1.1.0"
@@ -33,7 +48,7 @@ shellexpand = "3.1.0"
 simplelog = "0.12.2"
 structopt = "0.3.21"
 tar = "0.4.30"
-tempfile= "3.1.0"
+tempfile = "3.1.0"
 thiserror = "2.0.11"
 tokio = { version = "1.12.0", features = ["rt-multi-thread"] }
 toml = "0.8.19"

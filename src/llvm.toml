@@ -1,3 +1,19 @@
 
+# basic configuration for an llvm build version
 [llvm-mirror]
 url    = "https://github.com/llvm/llvm-project"
+
+# you can also add other mirrors or specific releases here
+# [custom-name]
+# url    = "www.example.com/llvm-project"
+# and you can add mirrors or specific releases for clang, lld, etc.
+# [llvm-mirror]
+# url    = "https://github.com/llvm-mirror/llvm"
+# target = ["X86"]
+# [[llvm-mirror.tools]]
+# name = "clang"
+# url = "https://github.com/llvm-mirror/clang"
+# [[llvm-mirror.tools]]
+# name = "clang-extra"
+# url = "https://github.com/llvm-mirror/clang-tools-extra"
+# relative_path = "tools/clang/tools/extra"

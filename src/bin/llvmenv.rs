@@ -2,7 +2,7 @@ use llvmenv::error::FileIoConvert;
 use llvmenv::*;
 use llvmenv::{config::cache_dir, error::CommandExt};
 
-use log::info;
+use log::{error, info};
 use simplelog::*;
 use std::{
     env,
@@ -115,6 +115,12 @@ enum LLVMEnv {
     #[structopt(name = "edit", about = "Edit llvmenv configure in your editor")]
     Edit {},
 
+    #[structopt(
+        name = "completions",
+        about = "used to automatically generate completions for the current $SHELL"
+    )]
+    Completions {},
+
     #[structopt(name = "zsh", about = "Setup Zsh integration")]
     Zsh {},
 }
@@ -122,13 +128,19 @@ enum LLVMEnv {
 fn main() -> error::Result<()> {
     TermLogger::init(
         LevelFilter::Info,
-        ConfigBuilder::new().set_time_offset_to_local().expect("time offset").build(),
+        ConfigBuilder::new()
+            .set_time_offset_to_local()
+            .expect("time offset")
+            .build(),
         TerminalMode::Mixed,
-		ColorChoice::Auto,
+        ColorChoice::Auto,
     )
     .or(SimpleLogger::init(
         LevelFilter::Info,
-        ConfigBuilder::new().set_time_offset_to_local().expect("time offset").build(),
+        ConfigBuilder::new()
+            .set_time_offset_to_local()
+            .expect("time offset")
+            .build(),
     ))
     .unwrap();
 
@@ -300,8 +312,40 @@ fn main() -> error::Result<()> {
         }
 
         LLVMEnv::Zsh {} => {
-            let src = include_str!("../../llvmenv.zsh");
-            println!("{}", src);
+            const ZSH_INTEGRATION: &str = include_str!("../../llvmenv.zsh");
+            println!("{}", ZSH_INTEGRATION);
+        }
+
+        LLVMEnv::Completions {} => {
+            use structopt::clap::Shell;
+
+            fn get_shell() -> error::Result<Shell> {
+                let shell = env::var("SHELL").unwrap();
+                if shell.contains("zsh") {
+                    Ok(Shell::Zsh)
+                } else if shell.contains("bash") {
+                    Ok(Shell::Bash)
+                } else if shell.contains("fish") {
+                    Ok(Shell::Fish)
+                } else if shell.contains("powershell") {
+                    Ok(Shell::PowerShell)
+                } else if shell.contains("elvish") {
+                    Ok(Shell::Elvish)
+                } else {
+                    Err(error::Error::UnsupportedShell { shell })
+                }
+            }
+
+            let shell = match get_shell() {
+                Ok(shell) => shell,
+                Err(e) => {
+                    error!("Error: {e}");
+                    exit(1);
+                }
+            };
+
+            LLVMEnv::clap().gen_completions_to("llvmenv", shell, &mut std::io::stdout());
+            println!();
         }
     }
     Ok(())
