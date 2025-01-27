@@ -1,3 +1,4 @@
+use error::Error;
 use llvmenv::error::FileIoConvert;
 use llvmenv::*;
 use llvmenv::{config::cache_dir, error::CommandExt};
@@ -196,7 +197,18 @@ fn main() -> error::Result<()> {
             build_type,
         } => {
             let mut entry = entry::load_entry(&name)?;
-            let nproc = nproc.unwrap_or_else(num_cpus::get);
+            let nprocs = Command::new("nproc")
+                .output()
+                .expect("Failed to get the output of the `nproc` command")
+                // convert the vec of u8 into a string then parse that into a string
+                .stdout
+                .iter()
+                .map(|&x| x as char)
+                .collect::<String>()
+                .trim()
+                .parse::<usize>()
+                .unwrap();
+            let nproc = nproc.unwrap_or(nprocs);
             if let Some(builder) = builder {
                 entry.set_builder(&builder)?;
             }
@@ -320,7 +332,8 @@ fn main() -> error::Result<()> {
             use structopt::clap::Shell;
 
             fn get_shell() -> error::Result<Shell> {
-                let shell = env::var("SHELL").unwrap();
+                let shell =
+                    env::var("SHELL").expect("SHELL environmental value is not set or unavailable");
                 if shell.contains("zsh") {
                     Ok(Shell::Zsh)
                 } else if shell.contains("bash") {
@@ -332,7 +345,7 @@ fn main() -> error::Result<()> {
                 } else if shell.contains("elvish") {
                     Ok(Shell::Elvish)
                 } else {
-                    Err(error::Error::UnsupportedShell { shell })
+                    Err(Error::UnsupportedShell { shell })
                 }
             }
 

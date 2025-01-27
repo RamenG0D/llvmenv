@@ -70,7 +70,7 @@ use log::{info, warn};
 use regex::Regex;
 use semver::Version;
 use serde_derive::Deserialize;
-use std::{cmp::Ordering, collections::HashMap, fs, path::PathBuf, process, str::FromStr};
+use std::{collections::HashMap, fs, path::PathBuf, process, str::FromStr};
 
 use crate::{config::*, error::*, resource::*};
 
@@ -220,8 +220,6 @@ impl Tool {
 }
 
 /// Setting for both Remote and Local entries. TOML setting file will be decoded into this struct.
-///
-///
 #[derive(Deserialize, Debug, Default, Clone, PartialEq)]
 pub struct EntrySetting {
     /// URL of remote LLVM resource, see also [resouce](../resource/index.html) module
@@ -290,6 +288,7 @@ pub fn official_releases() -> Vec<Entry> {
         .args([
             "ls-remote",
             "--tags",
+            "--refs",
             "https://github.com/llvm/llvm-project.git",
         ])
         .output()
@@ -297,59 +296,33 @@ pub fn official_releases() -> Vec<Entry> {
         .stdout;
 
     let output = String::from_utf8_lossy(&out);
-    let re = Regex::new(r"(\d+)\.(\d+)\.(\d+)").unwrap();
-    let tags: Vec<String> = re
-        .captures_iter(&output)
-        .map(|cap| cap[0].to_string())
-        .fold(Vec::new(), |mut x, y| {
-            // we want to filter out the tags that are not in the form of x.y.z
-            // by greatest to smallest version numbers if x1 == x2, and y1 == y2, then z1 == z2, then we discard the tag its a duplicate
-            let version = Version::parse(&y).unwrap();
-            let mut found = false;
-            for tag in x.iter() {
-                let tag_version = Version::parse(tag).unwrap();
-                if version.major == tag_version.major
-                    && version.minor == tag_version.minor
-                    && version.patch == tag_version.patch
-                {
-                    found = true;
-                    break;
-                }
-            }
-            if !found {
-                // now we check if x1 > x2, if so we insert x1 before x2
-                let mut index = 0;
-                for (i, tag) in x.iter().enumerate() {
-                    let tag_version = Version::parse(tag).unwrap();
-                    let (major, minor, patch) = (
-                        version.major.cmp(&tag_version.major),
-                        version.minor.cmp(&tag_version.minor),
-                        version.patch.cmp(&tag_version.patch),
-                    );
-                    match (major, minor, patch) {
-                        (Ordering::Greater, _, _)
-                        | (Ordering::Equal, Ordering::Greater, _)
-                        | (Ordering::Equal, Ordering::Equal, Ordering::Greater) => {
-                            index = i;
-                            break;
-                        }
-                        _ => {}
-                    }
-                }
-                x.insert(index, y);
-            }
-            x
-        });
-
-    // finally convert the output to a string
-    let tags = tags.join("\n");
-
-    // Parse the tags into a vector of entries
-    tags.lines()
-        .map(|tag| {
-            let version = Version::parse(tag).unwrap();
-            Entry::official(version.major, version.minor, version.patch)
+    // strip the stuff we don't need
+    // example: `4df9396b4217bb9a0a39ea81f9d977014b64e491	refs/tags/llvmorg-1.0.0`
+    let output = output.split("\n").collect::<Vec<&str>>();
+    let tags = output[0..output.len() - 1]
+        .iter()
+        .map(|x| x.split("\t").collect::<Vec<&str>>()[1])
+        .map(|x| {
+            // remove the refs/tags/llvmorg- from the string
+            x.strip_prefix("refs/tags/llvmorg-")
+                .expect("Failed to strip prefix from tag")
         })
+        .filter(|x| {
+            // just discard the tags that don't match the semver pattern
+            // like `10-init` and `10.0.0-rc1`
+            Regex::new(r"^\d+\.\d+\.\d+$").unwrap().is_match(x)
+        })
+        // now we need to discard any duplicate tags
+        .unique()
+        // now just order each version by semver ordering
+        .map(|x| Version::parse(x).expect("Failed to parse version"))
+        .sorted()
+        // just reverse the order for decending order
+        .rev()
+        .collect::<Vec<_>>();
+
+    tags.iter()
+        .map(|x| Entry::official(x.major, x.minor, x.patch))
         .collect()
 }
 
@@ -375,8 +348,8 @@ pub fn load_entry(name: &str) -> Result<Entry> {
 }
 
 lazy_static::lazy_static! {
-    static ref LLVM_8_0_1: Version = Version::new(8, 0, 1);
     static ref LLVM_9_0_0: Version = Version::new(9, 0, 0);
+    static ref LLVM_8_0_1: Version = Version::new(8, 0, 1);
 }
 
 impl Entry {
@@ -450,6 +423,7 @@ impl Entry {
         ));
         // unfortunately, libcxx and libcxxabi are not available for windows
         // due to current msvc limitations :(
+        // dang... 'L' Windows (Heh)
         #[cfg(not(target_os = "windows"))]
         {
             setting.tools.push(Tool::new(
@@ -591,16 +565,13 @@ impl Entry {
 
     pub fn src_dir(&self) -> Result<PathBuf> {
         Ok(match self {
-            Entry::Remote { name, .. } => match self.setting().project {
-                true => {
-                    info!("Project mode enabled");
+            Entry::Remote { name, .. } => {
+                if !self.setting().project {
+                    cache_dir()?.join(name).join("llvm")
+                } else {
                     cache_dir()?.join(name)
                 }
-                false => {
-                    info!("Project mode disabled");
-                    cache_dir()?.join(name).join("llvm")
-                }
-            },
+            }
             Entry::Local { path, .. } => path.into(),
         })
     }
