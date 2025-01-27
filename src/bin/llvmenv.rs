@@ -197,18 +197,7 @@ fn main() -> error::Result<()> {
             build_type,
         } => {
             let mut entry = entry::load_entry(&name)?;
-            let nprocs = Command::new("nproc")
-                .output()
-                .expect("Failed to get the output of the `nproc` command")
-                // convert the vec of u8 into a string then parse that into a string
-                .stdout
-                .iter()
-                .map(|&x| x as char)
-                .collect::<String>()
-                .trim()
-                .parse::<usize>()
-                .unwrap();
-            let nproc = nproc.unwrap_or(nprocs);
+            let nproc = nproc.unwrap_or_else(num_cpus::get);
             if let Some(builder) = builder {
                 entry.set_builder(&builder)?;
             }
