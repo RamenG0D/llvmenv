@@ -43,14 +43,15 @@
 //! Entry is regarded as *local* if there is `path` property, and *remote* if there is `url` property.
 //! Other options are common to *remote* entries.
 //!
-//! Pre-defined entries
+//! Default entries
 //! ------------------
 //!
-//! There is also pre-defined entries corresponding to the LLVM/Clang releases:
+//! There is also default entries corresponding to the LLVM/Clang releases (as scrapped from the github mirror by their tags):
 //!
 //! ```shell
 //! $ llvmenv entries
 //! llvm-mirror
+//! ...
 //! 7.0.0
 //! 6.0.1
 //! 6.0.0
@@ -307,6 +308,8 @@ pub fn official_releases() -> Vec<Entry> {
             x.strip_prefix("refs/tags/llvmorg-")
                 .expect("Failed to strip prefix from tag")
         })
+        // TODO: maybe only discard the latest of 2 revisions (I.E. keep 20.0.0-rc2 instead of
+        // possibly keeping 20.0.0-rc1)
         .filter(|x| {
             // just discard the tags that don't match the semver pattern
             // like `10-init` and `10.0.0-rc1`
@@ -565,6 +568,13 @@ impl Entry {
 
     pub fn src_dir(&self) -> Result<PathBuf> {
         Ok(match self {
+            Entry::Remote { name, .. } => cache_dir()?.join(name),
+            Entry::Local { path, .. } => path.into(),
+        })
+    }
+
+    pub fn project_dir(&self) -> Result<PathBuf> {
+        Ok(match self {
             Entry::Remote { name, .. } => {
                 if !self.setting().project {
                     cache_dir()?.join(name).join("llvm")
@@ -577,7 +587,7 @@ impl Entry {
     }
 
     pub fn build_dir(&self) -> Result<PathBuf> {
-        let dir = self.src_dir()?.join("build");
+        let dir = self.project_dir()?.join("build");
         if !dir.exists() {
             info!("Create build dir: {}", dir.display());
             fs::create_dir_all(&dir).with(&dir)?;
@@ -619,12 +629,9 @@ impl Entry {
     fn configure(&self) -> Result<()> {
         let setting = self.setting();
         let mut opts = setting.generator.option();
-        let dir = if setting.project {
-            self.src_dir()?.join("llvm")
-        } else {
-            self.src_dir()?
-        };
-        opts.push(format!("{}", dir.display()));
+        let dir = self.project_dir()?;
+
+        opts.push(format!("-S {}", dir.display()));
 
         opts.push(format!(
             "-DCMAKE_INSTALL_PREFIX={}",
