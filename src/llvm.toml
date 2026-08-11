@@ -2,6 +2,8 @@
 # basic configuration for an llvm build version
 [llvm-mirror]
 url = "https://github.com/llvm/llvm-project"
+# set so that we download the whole project into the llvm-project/llvm folder (but the tools are put in llvm-project)
+project = true
 
 # you can also add other mirrors or specific releases here
 # [custom-name]

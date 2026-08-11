@@ -568,14 +568,8 @@ impl Entry {
 
     pub fn src_dir(&self) -> Result<PathBuf> {
         Ok(match self {
-            Entry::Remote { name, .. } => cache_dir()?.join(name),
-            Entry::Local { path, .. } => path.into(),
-        })
-    }
-
-    pub fn project_dir(&self) -> Result<PathBuf> {
-        Ok(match self {
             Entry::Remote { name, .. } => {
+                debug_assert!(name.eq("llvm-mirror") && self.setting().project);
                 if !self.setting().project {
                     cache_dir()?.join(name).join("llvm")
                 } else {
@@ -587,7 +581,7 @@ impl Entry {
     }
 
     pub fn build_dir(&self) -> Result<PathBuf> {
-        let dir = self.project_dir()?.join("build");
+        let dir = self.src_dir()?.join("build");
         if !dir.exists() {
             info!("Create build dir: {}", dir.display());
             fs::create_dir_all(&dir).with(&dir)?;
@@ -629,7 +623,7 @@ impl Entry {
     fn configure(&self) -> Result<()> {
         let setting = self.setting();
         let mut opts = setting.generator.option();
-        let dir = self.project_dir()?;
+        let dir = self.src_dir()?;
 
         opts.push(format!("-S {}", dir.display()));
 
