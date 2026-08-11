@@ -12,14 +12,14 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     # steps
     steps:
-      - uses: actions/checkout@latest
+      - uses: actions/checkout@v7.0.1
       - name: get-cmake
-        uses: lukka/get-cmake@vlatest
-      - uses: actions-rs/cargo@latest
+        uses: lukka/get-cmake@v4.4.2
+      - uses: actions-rs/cargo@v1.0.1
         with:
           command: test
       - name: Setup Python
-        uses: actions/setup-python@latest
+        uses: actions/setup-python@v7.0.0
         with:
             python-version: '3.13'
       - run: pip install setuptools
